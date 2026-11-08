@@ -1,0 +1,210 @@
+records:
+  - record_key: SHOP-ENT-0001
+    kind: entity
+    capability_key: shopping-cart
+    requirement: >
+      The system SHALL represent each order line item with a category id, product id, item id, line number, quantity, unit price and quantity shipped.
+    confidence: high
+    confidence_basis: >
+      Field list is declared in the CMP descriptor and in the entity class accessors (two places), plus the DTD for the six non-shipped fields.
+    risk_class: financial
+    basis: CMP fields in ejb-jar.xml and abstract accessors in LineItemEJB.
+    plain_text: >
+      Every line on an order records which category, product and item was bought, its line number, how many were ordered, the price per unit, and how many have been shipped.
+    technical_note: >
+      LineItemEJB is a CMP 2.x entity with abstract schema LineItem; quantity and quantityShipped are int, unitPrice is float, other fields String. Local interface only.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/lineitem/src/ejb-jar.xml
+        line_start: 58
+        line_end: 78
+        excerpt: |
+          <cmp-field>
+            <field-name>categoryId</field-name>
+          </cmp-field>
+          <cmp-field>
+            <field-name>productId</field-name>
+          </cmp-field>
+          <cmp-field>
+            <field-name>itemId</field-name>
+          </cmp-field>
+          <cmp-field>
+            <field-name>lineNumber</field-name>
+          </cmp-field>
+          <cmp-field>
+            <field-name>quantity</field-name>
+          </cmp-field>
+          <cmp-field>
+            <field-name>unitPrice</field-name>
+          </cmp-field>
+          <cmp-field>
+            <field-name>quantityShipped</field-name>
+          </cmp-field>
+      - path: legacy-source/app/src/components/lineitem/src/com/sun/j2ee/blueprints/lineitem/ejb/LineItemEJB.java
+        line_start: 118
+        line_end: 136
+        excerpt: |
+          public abstract float getUnitPrice();
+
+            /**
+             * Setter for line item's unit price
+             * @param float      the unit price
+             */
+            public abstract void setUnitPrice(float price);
+
+            /**
+             * Accessor for line item's qty that is shipped
+             * @return int the qty already shipped
+             */
+            public abstract int getQuantityShipped();
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: LineItemEJB
+  - record_key: SHOP-BR-0002
+    kind: business-rule
+    capability_key: shopping-cart
+    requirement: >
+      The system SHALL create a line item from either explicit field values or an existing line item's data, in both cases taking the quantity shipped as a separate supplied value.
+    confidence: medium
+    confidence_basis: >
+      One clear place (two ejbCreate overloads); no tests or docs seen. No validation of values is performed.
+    risk_class: operational
+    basis: Both ejbCreate overloads copy values with no checks on quantity or price.
+    plain_text: >
+      A line can be created from scratch or copied from another line; how many have shipped is always given separately. No limits are checked on quantity or price at this level.
+    technical_note: >
+      ejbCreate(String,String,String,String,int,float,int) and ejbCreate(LineItem,int); the second ignores the source's shipped value. No range checks (negative quantity or price accepted).
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/lineitem/src/com/sun/j2ee/blueprints/lineitem/ejb/LineItemEJB.java
+        line_start: 158
+        line_end: 167
+        excerpt: |
+          public Object ejbCreate(LineItem lineItem, int qty) throws CreateException {
+              setCategoryId(lineItem.getCategoryId());
+              setProductId(lineItem.getProductId());
+              setItemId(lineItem.getItemId());
+              setLineNumber(lineItem.getLineNumber());
+              setQuantity(lineItem.getQuantity());
+              setUnitPrice(lineItem.getUnitPrice());
+              setQuantityShipped(qty);
+              return null;
+          }
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: LineItemEJB
+  - record_key: SHOP-REQ-0003
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL exchange a line item as a document containing category id, product id, item id, line number, quantity and unit price, in that order, with no shipped quantity.
+    confidence: high
+    confidence_basis: >
+      DTD defines the element order and getData builds the same six fields (two places). Which messages carry it is not visible in this module.
+    risk_class: operational
+    basis: LineItem.dtd and LineItemEJB.getData.
+    plain_text: >
+      When an order's lines are passed to other parts of the business, each line carries what was bought, its line number, quantity and price, but not how many have shipped.
+    technical_note: >
+      LineItem.dtd element sequence (CategoryId, ProductId, ItemId, LineNum, Quantity, UnitPrice); getData() returns the LineItem value object. Consumers are outside this module.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/lineitem/src/com/sun/j2ee/blueprints/lineitem/rsrc/schemas/LineItem.dtd
+        line_start: 38
+        line_end: 38
+        excerpt: |
+          <!ELEMENT LineItem (CategoryId, ProductId, ItemId, LineNum, Quantity, UnitPrice)>
+      - path: legacy-source/app/src/components/lineitem/src/com/sun/j2ee/blueprints/lineitem/ejb/LineItemEJB.java
+        line_start: 171
+        line_end: 180
+        excerpt: |
+          public LineItem getData() {
+              LineItem lineItem = new LineItem();
+              lineItem.setCategoryId(getCategoryId());
+              lineItem.setProductId(getProductId());
+              lineItem.setItemId(getItemId());
+              lineItem.setLineNumber(getLineNumber());
+              lineItem.setQuantity(getQuantity());
+              lineItem.setUnitPrice(getUnitPrice());
+              return lineItem;
+          }
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: LineItemEJB
+  - record_key: SHOP-BR-0004
+    kind: business-rule
+    capability_key: shopping-cart
+    requirement: >
+      The system SHALL store line item unit prices as single-precision floating-point values.
+    confidence: low
+    confidence_basis: >
+      Read directly from the type declaration only; no rationale, rounding rule or test found.
+    risk_class: financial
+    basis: unitPrice is declared float in accessors and create methods.
+    plain_text: >
+      Line prices are held with limited decimal precision, which may produce tiny rounding differences in totals.
+    technical_note: >
+      float getUnitPrice()/setUnitPrice(float); no rounding applied in this module.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/lineitem/src/com/sun/j2ee/blueprints/lineitem/ejb/LineItemEJB.java
+        line_start: 118
+        line_end: 118
+        excerpt: |
+          public abstract float getUnitPrice();
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: LineItemEJB
+  - record_key: SHOP-REQ-0005
+    kind: requirement
+    capability_key: shopping-cart
+    requirement: >
+      The system SHALL allow any caller to read and change line item data without role restriction, executing each accessor within a transaction.
+    confidence: high
+    confidence_basis: >
+      Method permission unchecked for all methods and container-transaction Required, both in descriptor; not confirmed against deployment roles.
+    risk_class: operational
+    basis: assembly-descriptor method-permission unchecked on *.
+    plain_text: >
+      Line items carry no access restriction of their own; access control is left to the modules that use them.
+    technical_note: >
+      ejb-jar.xml method-permission unchecked for LineItemEJB.*; container-transaction Required on local getters (and setters).
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/lineitem/src/ejb-jar.xml
+        line_start: 86
+        line_end: 101
+        excerpt: |
+          <method-permission>
+            <unchecked />
+            <method>
+              <ejb-name>LineItemEJB</ejb-name>
+              <method-name>*</method-name>
+            </method>
+          </method-permission>
+          <container-transaction>
+           <method>
+             <ejb-name>LineItemEJB</ejb-name>
+             <method-intf>Local</method-intf>
+             <method-name>getCategoryId</method-name>
+             <method-params />
+           </method>
+           <trans-attribute>Required</trans-attribute>
+          </container-transaction>
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.transaction: Required
+      ejb.bean: LineItemEJB
+findings: []
+suspected_defects:
+  - capability_key: order-processing-workflow
+    record_keys: [SHOP-REQ-0003]
+    severity: medium
+    category: data-corruption
+    title: Quantity shipped is dropped when line item data is read out
+    description: >
+      getData() copies six fields but omits quantityShipped, though it is stored. A line item read back and recreated loses its shipped count; ejbCreate(LineItem,int) also ignores the source's shipped value.
+    traces:
+      - path: legacy-source/app/src/components/lineitem/src/com/sun/j2ee/blueprints/lineitem/ejb/LineItemEJB.java
+        line_start: 171
+        line_end: 180
