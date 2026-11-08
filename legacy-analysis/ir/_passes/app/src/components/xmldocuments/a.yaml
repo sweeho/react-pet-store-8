@@ -1,0 +1,218 @@
+records:
+  - record_key: ORDAPP-WORKFLOW-0001
+    kind: workflow
+    capability_key: order-approval
+    requirement: The system SHALL exchange order-approval results as an OrderApproval document containing one or more Order entries, each carrying an OrderId and an OrderStatus.
+    confidence: high
+    confidence_basis: Document structure is stated in the DTD and mirrored by the serializing/deserializing code (two places).
+    risk_class: operational
+    basis: DTD requires Order+ with OrderId, OrderStatus; ChangedOrder/OrderApproval build and parse exactly these elements.
+    plain_text: Approval decisions are passed between systems as a list of orders, each with an order number and its new status.
+    technical_note: OrderApproval.java toDOM/fromDOM and ChangedOrder.java; OrderApproval.dtd. A DTD comment says OrderStatus should be an attribute (FIXME).
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/xmldocuments/src/rsrc/schemas/OrderApproval.dtd
+        line_start: 38
+        line_end: 45
+        excerpt: |
+          <!ELEMENT OrderApproval (Order+)>
+
+          <!ELEMENT Order (OrderId, OrderStatus)>
+
+          <!ELEMENT OrderId (#PCDATA)>
+
+          <!-- FIXME should be attribute -->
+          <!ELEMENT OrderStatus (#PCDATA)>
+      - path: legacy-source/app/src/components/xmldocuments/src/com/sun/j2ee/blueprints/xmldocuments/ChangedOrder.java
+        line_start: 73
+        line_end: 78
+        excerpt: |
+          public Node toDOM(Document document) {
+            Element root = document.createElement(XML_ORDER);
+            XMLDocumentUtils.appendChild(document, root, XML_ORDERID, orderId);
+            XMLDocumentUtils.appendChild(document, root, XML_ORDERSTATUS, orderStatus);
+            return root;
+          }
+    stack_metadata:
+      framework: JAXP DOM
+  - record_key: ORDAPP-BUSINESS-RULE-0002
+    kind: business-rule
+    capability_key: order-approval
+    requirement: GIVEN an incoming OrderApproval document WHEN it is read with validation enabled THEN the system SHALL reject it unless it conforms to the OrderApproval structure and has an OrderApproval root element.
+    confidence: high
+    confidence_basis: Validation default constant plus explicit root-element check in fromDOM (two places).
+    risk_class: operational
+    basis: VALIDATING=true is the default for all fromXML overloads without an explicit flag; fromDOM throws if root is not OrderApproval.
+    plain_text: An approval message that does not have the agreed shape is refused.
+    technical_note: OrderApproval.fromXML defaults validating=true; fromDOM throws XMLDocumentException "OrderApproval element expected." Callers may pass validating=false.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/xmldocuments/src/com/sun/j2ee/blueprints/xmldocuments/OrderApproval.java
+        line_start: 118
+        line_end: 124
+        excerpt: |
+          public static OrderApproval fromXML(Source source) throws XMLDocumentException {
+            return fromXML(source, null, VALIDATING);
+          }
+
+          public static OrderApproval fromXML(String buffer) throws XMLDocumentException {
+            return fromXML(buffer, null, VALIDATING);
+          }
+      - path: legacy-source/app/src/components/xmldocuments/src/com/sun/j2ee/blueprints/xmldocuments/OrderApproval.java
+        line_start: 156
+        line_end: 169
+        excerpt: |
+          public static OrderApproval fromDOM(Node node) throws XMLDocumentException {
+            Element element;
+            if (node.getNodeType() == Node.ELEMENT_NODE && (element = ((Element) node)).getTagName().equals(XML_ORDERAPPROVAL)) {
+            ...
+            throw new XMLDocumentException(XML_ORDERAPPROVAL + " element expected.");
+    stack_metadata:
+      framework: JAXP DOM
+  - record_key: SUPPLY-INTEGRATION-0001
+    kind: integration
+    capability_key: supplier-fulfilment
+    requirement: The system SHALL build a supplier purchase-order document containing, in order, the order id, the order date (yyyy-MM-dd), the shipping address (first name, last name, street, city, state, country, zip code, email, phone) and the line items.
+    confidence: high
+    confidence_basis: Order of elements enforced by both the builder's assembly code and the DTD/XSD sequence.
+    risk_class: operational
+    basis: copyDocument appends elements in fixed order; DTD declares same sequence; date formatted with fixed pattern.
+    plain_text: Orders sent to suppliers always carry the order number, date, full ship-to address with contact details, and the items ordered.
+    technical_note: TPASupplierOrderXDE (namespace http://blueprints.j2ee.sun.com/TPASupplierOrder); DTD or XSD output selectable by constructor flag.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/xmldocuments/src/com/sun/j2ee/blueprints/xmldocuments/tpa/TPASupplierOrderXDE.java
+        line_start: 119
+        line_end: 126
+        excerpt: |
+          public void copyDocument(Result result) throws XMLDocumentException {
+            Element supplierOrderElement = supplierOrderDocument.createElementNS(XML_NAMESPACE, XML_SUPPLIERORDER);
+            supplierOrderElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:" + XML_PREFIX, XML_NAMESPACE);
+            supplierOrderElement.appendChild(orderIdElement);
+            supplierOrderElement.appendChild(orderDateElement);
+            supplierOrderElement.appendChild(shippingAddressElement);
+            supplierOrderElement.appendChild(lineItemsElement);
+            supplierOrderDocument.appendChild(supplierOrderElement);
+      - path: legacy-source/app/src/components/xmldocuments/src/com/sun/j2ee/blueprints/xmldocuments/rsrc/schemas/TPASupplierOrder.dtd
+        line_start: 1
+        line_end: 113
+        excerpt: |
+          <!ELEMENT tpaso:SupplierOrder (tpaso:OrderId, tpaso:OrderDate, tpaso:ShippingAddress, tpaso:LineItems)>
+    stack_metadata:
+      framework: JAXP DOM
+  - record_key: SUPPLY-INTEGRATION-0002
+    kind: integration
+    capability_key: supplier-fulfilment
+    requirement: The system SHALL build an invoice document sent back to the order-processing side containing, in order, the order id, user id, order date, shipping date (dates as yyyy-MM-dd) and line items.
+    confidence: high
+    confidence_basis: Builder assembly order plus DTD/XSD declaration.
+    risk_class: financial
+    basis: TPAInvoiceXDE.copyDocument appends fixed element order; TPAInvoice.dtd/xsd exist for the same shape.
+    plain_text: The invoice a supplier returns identifies the order and customer, gives order and shipping dates, and lists the items billed.
+    technical_note: TPAInvoiceXDE, namespace http://blueprints.j2ee.sun.com/TPAInvoice.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/xmldocuments/src/com/sun/j2ee/blueprints/xmldocuments/tpa/TPAInvoiceXDE.java
+        line_start: 113
+        line_end: 121
+        excerpt: |
+          public void copyDocument(Result result) throws XMLDocumentException {
+            Element invoiceElement = invoiceDocument.createElementNS(XML_NAMESPACE, XML_INVOICE);
+            invoiceElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:" + XML_PREFIX, XML_NAMESPACE);
+            invoiceElement.appendChild(orderIdElement);
+            invoiceElement.appendChild(userIdElement);
+            invoiceElement.appendChild(orderDateElement);
+            invoiceElement.appendChild(shippingDateElement);
+            invoiceElement.appendChild(lineItemsElement);
+    stack_metadata:
+      framework: JAXP DOM
+  - record_key: SUPPLY-ENTITY-0003
+    kind: entity
+    capability_key: supplier-fulfilment
+    requirement: The system SHALL represent each supplier-order and invoice line item with category id, product id, item id, line number, quantity and unit price, all mandatory.
+    confidence: high
+    confidence_basis: Builder sets all six attributes and the XSD marks each use="required".
+    risk_class: financial
+    basis: TPALineItemUtils.addLineItem and TPALineItem.xsd.
+    plain_text: Every item line names its category, product, item, line number, quantity and unit price.
+    technical_note: Shared by TPASupplierOrderXDE and TPAInvoiceXDE via TPALineItemUtils; quantity written via Long.toString, price via Float.toString.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/xmldocuments/src/com/sun/j2ee/blueprints/xmldocuments/tpa/TPALineItemUtils.java
+        line_start: 67
+        line_end: 74
+        excerpt: |
+          Element lineItemElement = document.createElementNS(XML_NAMESPACE, XML_LINEITEM);
+          lineItemElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:" + XML_PREFIX, XML_NAMESPACE);
+          lineItemElement.setAttributeNS(XML_NAMESPACE, XML_CATEGORYID, categoryId);
+          lineItemElement.setAttributeNS(XML_NAMESPACE, XML_PRODUCTID, productId);
+          lineItemElement.setAttributeNS(XML_NAMESPACE, XML_ITEMID, itemId);
+          lineItemElement.setAttributeNS(XML_NAMESPACE, XML_LINENO, lineNo);
+          lineItemElement.setAttributeNS(XML_NAMESPACE, XML_QUANTITY, Long.toString(quantity));
+          lineItemElement.setAttributeNS(XML_NAMESPACE, XML_UNITPRICE, Float.toString(unitPrice));
+      - path: legacy-source/app/src/components/xmldocuments/src/com/sun/j2ee/blueprints/xmldocuments/rsrc/schemas/TPALineItem.xsd
+        line_start: 10
+        line_end: 21
+        excerpt: |
+          <xsd:attribute name="quantity" type="xsd:positiveInteger" use="required" />
+          <xsd:attribute name="unitPrice" type="positiveDecimal" use="required" />
+    stack_metadata:
+      framework: JAXP DOM
+  - record_key: SUPPLY-BUSINESS-RULE-0004
+    kind: business-rule
+    capability_key: supplier-fulfilment
+    requirement: The system SHALL require line quantity to be a positive integer, line number a non-negative integer and unit price a decimal of at least 0 when the XSD form of a line item is validated.
+    confidence: medium
+    confidence_basis: Stated once in the XSD; the Java builder performs no such check, and the DTD form cannot express it.
+    risk_class: financial
+    basis: TPALineItem.xsd type restrictions.
+    plain_text: Ordered quantities must be at least one, and prices cannot be negative.
+    technical_note: Enforced only when the XSD variant is chosen (xsdValidation=true); the DTD variant is the default.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/xmldocuments/src/com/sun/j2ee/blueprints/xmldocuments/rsrc/schemas/TPALineItem.xsd
+        line_start: 10
+        line_end: 23
+        excerpt: |
+          <xsd:attribute name="lineNo" type="xsd:nonNegativeInteger" use="required" />
+          <xsd:attribute name="quantity" type="xsd:positiveInteger" use="required" />
+          <xsd:attribute name="unitPrice" type="positiveDecimal" use="required" />
+          ...
+          <xsd:minInclusive value="0.0" />
+    stack_metadata:
+      framework: XML Schema
+  - record_key: SUPPLY-BUSINESS-RULE-0005
+    kind: business-rule
+    capability_key: supplier-fulfilment
+    requirement: GIVEN a document builder is asked to set a field to a null value WHEN the element is created THEN the system SHALL refuse with an error stating the value cannot be null.
+    confidence: medium
+    confidence_basis: One clear place (shared helper); I read only the string overload, not all overloads.
+    risk_class: operational
+    basis: XMLDocumentUtils.createElement throws IllegalArgumentException on null value.
+    plain_text: A supplier order or invoice cannot be built with a missing required value.
+    technical_note: XMLDocumentUtils.createElement(Document,String,String,String).
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/xmldocuments/src/com/sun/j2ee/blueprints/xmldocuments/XMLDocumentUtils.java
+        line_start: 319
+        line_end: 326
+        excerpt: |
+          public static Element createElement(Document document, String nsURI, String name, String value) {
+          ...
+            throw new IllegalArgumentException("XMLDocumentUtils.createElement: value of " + name + " element can't be null.");
+    stack_metadata:
+      framework: JAXP DOM
+findings: []
+suspected_defects:
+  - capability_key: supplier-fulfilment
+    record_keys: [SUPPLY-ENTITY-0003]
+    severity: medium
+    category: inconsistent-rounding
+    title: Unit price carried as a 32-bit float
+    description: >
+      Unit prices are written with Float.toString of a float, which can introduce
+      binary rounding artefacts into monetary values on invoices and supplier orders.
+    traces:
+      - path: legacy-source/app/src/components/xmldocuments/src/com/sun/j2ee/blueprints/xmldocuments/tpa/TPALineItemUtils.java
+        line_start: 66
+        line_end: 74
