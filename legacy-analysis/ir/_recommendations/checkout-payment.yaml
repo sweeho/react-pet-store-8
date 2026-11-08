@@ -1,0 +1,151 @@
+recommendations:
+  - record_key: CHK-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement.
+  - record_key: CARD-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement; duplicate of another record, SME should merge it with its twin.
+  - record_key: CHECKOUT-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement.
+  - record_key: CHK-RULE-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code/DDL lines support the statement; capability assignment (checkout-payment) is the part to confirm.
+  - record_key: CHK-RULE-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement.
+  - record_key: CHK-BR-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement; duplicate of another record, SME should merge it with its twin.
+  - record_key: CHK-BR-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement; duplicate of another record, SME should merge it with its twin.
+  - record_key: CHK-RULE-0003
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement; duplicate of another record, SME should merge it with its twin.
+  - record_key: CHK-INT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement.
+  - record_key: CHK-REQ-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement.
+  - record_key: CHECKOUT-ENT-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement.
+  - record_key: CHECKOUT-PAYMENT-ENTITY-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement.
+  - record_key: CHKO-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement; duplicate of another record, SME should merge it with its twin.
+  - record_key: CHECKOUT-RULE-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement.
+  - record_key: CHECKOUT-PAYMENT-REQ-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement.
+  - record_key: CHK-REQ-0004
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement; duplicate of another record, SME should merge it with its twin.
+  - record_key: CHECKOUT-PAYMENT-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code/DDL lines support the statement; capability assignment (checkout-payment) is the part to confirm.
+  - record_key: CHK-REQ-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code/DDL lines support the statement; duplicate of another record, SME should merge it with its twin.
+  - record_key: CHECKOUT-PAYMENT-REQ-0003
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement.
+  - record_key: CHK-REQ-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement; duplicate of another record, SME should merge it with its twin.
+  - record_key: CHECKOUT-PAYMENT-REQ-0004
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement.
+  - record_key: CHKP-INT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code/DDL lines support the statement; duplicate of another record, SME should merge it with its twin.
+  - record_key: CHKPAY-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code/DDL lines support the statement; duplicate of another record, SME should merge it with its twin.
+  - record_key: LOC-REQ-0014
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code/DDL lines support the statement; capability assignment (checkout-payment) is the part to confirm.
+  - record_key: ORDER-PROCESSING-WORKFLOW-BUSINESS-RULE-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement.
+  - record_key: ORDP-RULE-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement; duplicate of another record, SME should merge it with its twin.
+  - record_key: WORKFLOW-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code/DDL lines support the statement.
+  - record_key: CTR-ENT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code/DDL lines support the statement; duplicate of another record, SME should merge it with its twin.
+  - record_key: BATCH-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code/DDL lines support the statement; capability assignment (checkout-payment) is the part to confirm.
+  - record_key: BATCH-OPERATIONS-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code/DDL lines support the statement; capability assignment (checkout-payment) is the part to confirm.
