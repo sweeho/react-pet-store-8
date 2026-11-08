@@ -1,0 +1,386 @@
+records:
+  - record_key: SUPF-RULE-0001
+    kind: business-rule
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL, on receiving a supplier purchase order, persist the order and then attempt to fulfil each of its line items against inventory.
+    plain_text: >
+      When the supplier gets a purchase order it records the order first and then tries to ship each line from stock.
+    technical_note: >
+      SupplierOrderMDB.onMessage passes the text to OrderFulfillmentFacade.processPO, which converts the XML, creates the order entity and calls processAnOrder.
+    interface: true
+    confidence: high
+    confidence_basis: Facade processPO and the MDB caller both read; ejb-jar declares the beans. Queue wiring itself is outside this module.
+    risk_class: operational
+    basis: processPO persists before fulfilment, so an order that cannot be filled stays stored as pending.
+    traces:
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/orderfulfillment/ejb/OrderFulfillmentFacadeEJB.java
+        line_start: 233
+        line_end: 235
+        excerpt: |
+          order = supplierOrderLocalHome.create(supplierOrder);
+              //fullfil order
+              invoiceXml = processAnOrder(order);
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/processpo/ejb/SupplierOrderMDB.java
+        line_start: 100
+        line_end: 106
+        excerpt: |
+          String invoice = doWork(recdText);
+    stack_metadata:
+      framework: EJB 2.0 MDB + session bean
+      ejb.bean: SupplierOrderMDB, OrderFulfillmentFacadeEJB
+      jms.queue: supplier order queue (inbound)
+  - record_key: SUPF-RULE-0002
+    kind: business-rule
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL ship a line item only in full: if stock for the item is at least the ordered quantity, stock SHALL be reduced by that quantity and the line marked fully shipped; otherwise the line SHALL be left unshipped (no partial shipment). Lines already fully shipped SHALL be skipped.
+    plain_text: >
+      A line is shipped completely or not at all. If stock covers the whole quantity it is taken from stock; if not, the line waits.
+    technical_note: >
+      checkInventory compares Inventory.getQuantity() to the line quantity and calls reduceQuantity; processAnOrder then sets quantityShipped = quantity.
+    interface: false
+    confidence: high
+    confidence_basis: Logic in facade plus the inventory entity's reduceQuantity; two places read.
+    risk_class: financial
+    basis: Whole-line stock check, decrement, and skip of already shipped lines.
+    traces:
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/orderfulfillment/ejb/OrderFulfillmentFacadeEJB.java
+        line_start: 126
+        line_end: 139
+        excerpt: |
+          InventoryLocal inv = invHome.findByPrimaryKey(item.getItemId());
+                if(inv.getQuantity() < item.getQuantity())
+                  return(false);
+                inv.reduceQuantity(item.getQuantity());
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/orderfulfillment/ejb/OrderFulfillmentFacadeEJB.java
+        line_start: 187
+        line_end: 196
+        excerpt: |
+          if(li.getQuantity() == li.getQuantityShipped())
+                  continue;
+                if(!checkInventory(li)) {
+                  allItemsAvailable = false;
+                  continue;
+                }
+                li.setQuantityShipped(li.getQuantity());
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/inventory/ejb/InventoryEJB.java
+        line_start: 82
+        line_end: 85
+        excerpt: |
+          public void reduceQuantity(int quantity) {
+                  int q = this.getQuantity();
+                  setQuantity(q-quantity);
+              }
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: OrderFulfillmentFacadeEJB, InventoryEJB
+      ejb.transaction: Required
+  - record_key: SUPF-RULE-0003
+    kind: business-rule
+    capability_key: supplier-fulfilment
+    requirement: >
+      GIVEN a line item whose inventory record does not exist, WHEN fulfilment is attempted, THEN the line SHALL be treated as unavailable and left unshipped.
+    plain_text: >
+      If the supplier has no stock record at all for an item, that line simply cannot be filled yet.
+    technical_note: >
+      FinderException from findByPrimaryKey is caught and swallowed in checkInventory, returning false (comment says supplier not populated).
+    interface: false
+    confidence: medium
+    confidence_basis: One place, with an explanatory comment.
+    risk_class: operational
+    basis: Explicit catch and comment.
+    traces:
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/orderfulfillment/ejb/OrderFulfillmentFacadeEJB.java
+        line_start: 132
+        line_end: 136
+        excerpt: |
+          } catch (FinderException fe) {
+                // swallow the finder exception because this means
+                // supplier has not been populated; So we cant fulfill
+                // this part of the order now
+                return(false);
+    stack_metadata:
+      framework: EJB 2.0
+  - record_key: SUPF-RULE-0004
+    kind: business-rule
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL mark a purchase order COMPLETED only when every one of its line items was available in the current pass; otherwise the order SHALL keep its existing (pending) status and be retried later.
+    plain_text: >
+      An order is closed only when all its lines could be shipped. Otherwise it stays open and is retried when stock arrives.
+    technical_note: >
+      allItemsAvailable flag in processAnOrder; setPoStatus(OrderStatusNames.COMPLETED). A line shipped in an earlier pass is skipped without clearing the flag, so a later pass can complete the order.
+    interface: false
+    confidence: high
+    confidence_basis: Status set in code; the pending query in processPendingPO and the MDB comment about waiting for inventory corroborate.
+    risk_class: operational
+    basis: Order status transition driven by availability flag.
+    traces:
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/orderfulfillment/ejb/OrderFulfillmentFacadeEJB.java
+        line_start: 197
+        line_end: 198
+        excerpt: |
+          if(allItemsAvailable)
+                  po.setPoStatus(OrderStatusNames.COMPLETED);
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/processpo/ejb/SupplierOrderMDB.java
+        line_start: 111
+        line_end: 113
+        excerpt: |
+          if(invoice!=null) {
+                  doTransition(invoice);
+                } //else wait for the inventory to arrive at the inventory receiver
+    stack_metadata:
+      framework: EJB 2.0
+      ejb.bean: OrderFulfillmentFacadeEJB
+  - record_key: SUPF-RULE-0005
+    kind: business-rule
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL generate an invoice document covering only the line items shipped in the current pass, with the order id and order date of the purchase order, the shipping date set to the time of generation, and the customer label fixed as "Dear PetStore Customer".
+    plain_text: >
+      Each time lines are shipped, an invoice is produced for just those lines, dated today, addressed generically to "Dear PetStore Customer" rather than the real customer.
+    technical_note: >
+      createInvoice builds TPAInvoiceXDE; userId is a hard-coded literal; only items present in the 'items' map are added.
+    interface: true
+    confidence: medium
+    confidence_basis: Single clear place; the user label is a bare literal.
+    risk_class: financial
+    basis: Invoice content construction.
+    traces:
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/orderfulfillment/ejb/OrderFulfillmentFacadeEJB.java
+        line_start: 148
+        line_end: 153
+        excerpt: |
+          invoiceXDE.setOrderId(po.getPoId());
+                invoiceXDE.setUserId("Dear PetStore Customer");
+                Date poDate = new Date(po.getPoDate());
+                invoiceXDE.setOrderDate(poDate);
+                Date curDate = new Date();
+                invoiceXDE.setShippingDate(curDate);
+    stack_metadata:
+      framework: EJB 2.0 + XML document helper
+      ejb.bean: OrderFulfillmentFacadeEJB
+  - record_key: SUPF-INTG-0006
+    kind: integration
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL publish each generated invoice as a text message to the invoice topic so the order processing application receives it; when no invoice was produced no message SHALL be sent.
+    plain_text: >
+      Invoices created by the supplier are sent on to the main order system; nothing is sent when nothing shipped.
+    technical_note: >
+      SupplierOrderTD.doTransition sends the XML via TopicSender to jms/opc/InvoiceTopic (resource-env-ref). Delegate class comes from env-entry param/transitiondelegate/SupplierOrderTD (value redacted in source).
+    interface: true
+    confidence: high
+    confidence_basis: Transition delegate, MDB caller and web.xml resource refs agree.
+    risk_class: operational
+    basis: Hand-off from supplier to the order processing application through a JMS topic.
+    traces:
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/transitions/SupplierOrderTD.java
+        line_start: 76
+        line_end: 83
+        excerpt: |
+          public void doTransition(TransitionInfo info) throws TransitionException {
+              String xmlInvoice = info.getXMLMessage();
+              try {
+                invoiceTopicSender.sendMessage(xmlInvoice);
+              } catch(JMSException je) {
+                  throw new TransitionException(je);
+              }
+      - path: legacy-source/app/src/apps/supplier/src/docroot/WEB-INF/web.xml
+        line_start: 80
+        line_end: 83
+        excerpt: |
+          <resource-env-ref-name>jms/opc/InvoiceTopic</resource-env-ref-name>
+    stack_metadata:
+      framework: JMS topic
+      jms.queue: jms/opc/InvoiceTopic
+  - record_key: SUPF-WKFL-0007
+    kind: workflow
+    capability_key: supplier-fulfilment
+    requirement: >
+      WHEN the supplier administrator submits inventory updates, the system SHALL in one transaction replace the stock quantity of each ticked item that has a non-empty quantity of zero or more, then reprocess all pending purchase orders, then send the resulting invoices.
+    plain_text: >
+      After the supplier administrator enters new stock levels, every waiting order is retried against the new stock and invoices go out for whatever can now be shipped. The entered number replaces the current stock; it is not added to it.
+    technical_note: >
+      RcvrRequestProcessor currentScreen=updateinventory: UserTransaction begin, updateInventory (item_<id>, qty_<id>), processPendingPO, sendInvoices, commit, forward to back.jsp. Negative or empty quantities are skipped silently.
+    interface: false
+    confidence: high
+    confidence_basis: Servlet code plus the JSP form that supplies the parameter names.
+    risk_class: operational
+    basis: Receiver-side stock replenishment trigger.
+    traces:
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/inventory/web/RcvrRequestProcessor.java
+        line_start: 119
+        line_end: 129
+        excerpt: |
+          if ((param != null) && param.startsWith("item_")) {
+          Integer qty = new Integer(newQty);
+                  if(qty.intValue() >= 0 ) {
+                    inventory = inventoryHomeRef.findByPrimaryKey(itemId);
+                    inventory.setQuantity(qty.intValue());
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/inventory/web/RcvrRequestProcessor.java
+        line_start: 184
+        line_end: 189
+        excerpt: |
+          ut.begin();        // start the xaction.
+                      updateInventory(req);
+                      Collection invoices = procPO.processPendingPO();
+                      sendInvoices(invoices);
+                      ut.commit();        // end xaction
+    stack_metadata:
+      framework: Servlet + UserTransaction
+      session.scope: session
+  - record_key: SUPF-RULE-0008
+    kind: business-rule
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL, on each pending-order reprocessing run, select all purchase orders in PENDING status and attempt fulfilment on each, returning only the invoices actually produced; an order whose invoice cannot be built SHALL be skipped without failing the run.
+    plain_text: >
+      When stock is updated, all orders still waiting are retried one by one. An order whose invoice cannot be produced is skipped and stays stored for a later try.
+    technical_note: >
+      processPendingPO uses findOrdersByStatus(PENDING); XMLDocumentException is caught and printed to stdout.
+    interface: false
+    confidence: medium
+    confidence_basis: One clear method; the swallowed-error behaviour is explicit in comments.
+    risk_class: operational
+    basis: Retry loop over pending orders.
+    traces:
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/orderfulfillment/ejb/OrderFulfillmentFacadeEJB.java
+        line_start: 250
+        line_end: 265
+        excerpt: |
+          supplierOrderLocalHome.findOrdersByStatus(OrderStatusNames.PENDING);
+          } catch (XMLDocumentException xe) {
+                    // ignore since means we cant fulfill this order now
+                    System.out.println("OrderFulfillmentFacade:" + xe);
+    stack_metadata:
+      framework: EJB 2.0
+      ejb.bean: OrderFulfillmentFacadeEJB
+  - record_key: SUPF-RULE-0009
+    kind: business-rule
+    capability_key: sign-on-security
+    requirement: >
+      The system SHALL restrict the supplier inventory update request handler to authenticated users in the administrator role, using form-based login, and SHALL show a "not authorised" message on the inventory screen to a user not in that role.
+    plain_text: >
+      Only a logged-in administrator can view the inventory update form and submit changes; anyone else sees a not-authorised message.
+    technical_note: >
+      web.xml security-constraint on /RcvrRequestProcessor (GET,POST) with role administrator, FORM login (login.jsp/error.jsp); displayinventory.jsp checks isUserInRole. Transport guarantee NONE (no TLS required). Session timeout 54 minutes.
+    interface: false
+    confidence: high
+    confidence_basis: Declarative constraint in web.xml and a programmatic role check in the JSP.
+    risk_class: regulated
+    basis: Declared access constraint plus defensive page check.
+    traces:
+      - path: legacy-source/app/src/apps/supplier/src/docroot/WEB-INF/web.xml
+        line_start: 91
+        line_end: 104
+        excerpt: |
+          <url-pattern>/RcvrRequestProcessor</url-pattern>
+          <role-name>administrator</role-name>
+          <transport-guarantee>NONE</transport-guarantee>
+      - path: legacy-source/app/src/apps/supplier/src/docroot/displayinventory.jsp
+        line_start: 66
+        line_end: 66
+        excerpt: |
+          if(request.isUserInRole("administrator")) {
+    stack_metadata:
+      framework: Servlet security
+      jsp.page: displayinventory.jsp
+      session.scope: session, timeout 54 min
+  - record_key: SUPF-SCRN-0010
+    kind: screen
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL present all inventory items with item id and existing quantity, plus a new-quantity input and an update tick box per item, and SHALL show "There are no items in inventory at all" when no inventory collection is returned.
+    plain_text: >
+      The inventory screen lists every item with its current stock, a box for the new quantity and a tick to apply it.
+    technical_note: >
+      displayinventory.jsp using DisplayInventoryBean.getInventory (findAllInventoryItems). The empty message shows only when the collection is null (e.g. lookup failure), not when it is empty.
+    interface: false
+    confidence: medium
+    confidence_basis: One JSP and its bean; empty-collection behaviour inferred from a null check.
+    risk_class: presentational
+    basis: Screen layout and fields.
+    traces:
+      - path: legacy-source/app/src/apps/supplier/src/docroot/displayinventory.jsp
+        line_start: 73
+        line_end: 74
+        excerpt: |
+          Collection inventoryItems = displayInventory.getInventory();
+              if (inventoryItems != null) {
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/inventory/web/DisplayInventoryBean.java
+        line_start: 82
+        line_end: 82
+        excerpt: |
+          invColl = inventoryHomeRef.findAllInventoryItems();
+    stack_metadata:
+      framework: JSP
+      jsp.page: displayinventory.jsp
+      db.object: Inventory (CMP, abstract schema Inventory)
+  - record_key: SUPF-ENTY-0011
+    kind: entity
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL keep one inventory record per item id holding the on-hand quantity, created with an initial quantity at population time.
+    plain_text: >
+      The supplier keeps one stock count per item.
+    technical_note: >
+      InventoryEJB CMP entity (itemId key, quantity), ejbCreate(itemId, quantity); populated from Populate-UTF8.xml by PopulateServlet/InventoryPopulator. No lower bound enforced in the entity.
+    interface: false
+    confidence: medium
+    confidence_basis: Entity class and descriptor read; initial data file not examined line by line.
+    risk_class: operational
+    basis: Inventory entity definition.
+    traces:
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/inventory/ejb/InventoryEJB.java
+        line_start: 104
+        line_end: 109
+        excerpt: |
+          public String ejbCreate(String itemId, int quantity)
+                                                            throws CreateException {
+              setItemId(itemId);
+              setQuantity(quantity);
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: InventoryEJB
+      db.object: Inventory
+findings:
+  - kind: ambiguity
+    path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/inventory/web/RcvrRequestProcessor.java
+    description: >
+      The servlet's doGet forwards to index.jsp via a shared instance field (fromDoGet) which is not thread safe, and the logout/displayinventory branches fall through without return. Intent for concurrent use is unclear; a human should decide whether to preserve.
+suspected_defects:
+  - capability_key: supplier-fulfilment
+    record_keys: [SUPF-WKFL-0007]
+    severity: medium
+    category: error-swallowed
+    title: Inventory update failures are only printed, user sees no error
+    description: >
+      Exceptions in the update transaction (finder, naming, rollback, system) are caught and printed to the stack trace; no response is sent and a failed transaction is not explicitly rolled back. Invalid number input throws an unchecked error outside the catch list.
+    traces:
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/inventory/web/RcvrRequestProcessor.java
+        line_start: 190
+        line_end: 205
+  - capability_key: supplier-fulfilment
+    record_keys: [SUPF-RULE-0005]
+    severity: medium
+    category: other
+    title: Invoice addressed to a fixed generic label, not the customer
+    description: >
+      The invoice user id is always the literal "Dear PetStore Customer", so the real customer identity is never carried to the invoice.
+    traces:
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/orderfulfillment/ejb/OrderFulfillmentFacadeEJB.java
+        line_start: 149
+        line_end: 149
+  - capability_key: supplier-fulfilment
+    record_keys: [SUPF-RULE-0002, SUPF-RULE-0004]
+    severity: medium
+    category: data-corruption
+    title: Stock decremented before invoice build can fail
+    description: >
+      Stock reduction and shipped quantity are set inside processAnOrder before the invoice is generated. If invoice generation fails the exception is swallowed and null returned, so goods are marked shipped with no invoice sent and no later retry (line is skipped as already shipped).
+    traces:
+      - path: legacy-source/app/src/apps/supplier/src/com/sun/j2ee/blueprints/supplier/orderfulfillment/ejb/OrderFulfillmentFacadeEJB.java
+        line_start: 187
+        line_end: 208
