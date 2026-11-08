@@ -154,7 +154,7 @@ The system SHALL expire an idle storefront web session after 15 minutes.
 
 Recovered from: SGN-REQ-0002
 
-The system SHOULD expire an inactive web session of the shared web framework after 30 minutes; this conflicts with the 15 and 54 minute values of the applications and is pending a decision.
+The system SHALL expire an inactive web session of the shared web framework after 30 minutes; this conflicts with the 15 and 54 minute values of the applications and is pending a decision.
 
 #### Scenario: Idle framework session
 
@@ -220,7 +220,7 @@ When a customer signs on with no customer record yet, the system SHALL leave the
 
 Recovered from: SGN-REQ-0001
 
-The system SHOULD mark edit account, sign in, place order, and shipping and billing validation screens as requiring sign-in; reachability in the legacy framework is unresolved.
+The system SHALL mark edit account, sign in, place order, and shipping and billing validation screens as requiring sign-in; reachability in the legacy framework is unresolved.
 
 #### Scenario: Screen flagged as requiring sign-in
 
