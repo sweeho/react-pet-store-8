@@ -1,0 +1,151 @@
+records:
+  - record_key: CUSTNOTIF-INT-0001
+    kind: integration
+    capability_key: customer-notifications
+    requirement: The system SHALL send an email for each mail message received on the mail queue, taking recipient address, subject and content from the message's XML Address, Subject and Content elements.
+    confidence: medium
+    confidence_basis: One clear place (MDB onMessage plus Mail DTD); no tests or docs seen. Which upstream modules post to the queue was not examined here.
+    risk_class: operational
+    basis: The message-driven bean parses the queue text message as a Mail XML document and hands its fields to the mail helper.
+    plain_text: Whenever a notification request arrives, the customer is sent an email to the address, with the subject and body given in the request.
+    technical_note: MailerMDB.onMessage casts the JMS message to TextMessage, parses with Mail.fromXML (validating against Mail.dtd) and calls MailHelper.createAndSendMail. Queue name is not set in ejb-jar.xml (destination-type javax.jms.Queue only); deployment-bound.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/ejb/MailerMDB.java
+        line_start: 74
+        line_end: 82
+        excerpt: |
+          public void onMessage(Message recvMsg) {
+            TextMessage textMessage = null;
+            String xmlMailMessage = null;
+            Mail recMail = null;
+            try {
+              textMessage = (TextMessage)recvMsg;
+              xmlMailMessage = textMessage.getText();
+              recMail = Mail.fromXML(xmlMailMessage);
+              sendMail(recMail.getAddress(), recMail.getSubject(), recMail.getContent(),  Locale.getDefault());
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/rsrc/schemas/Mail.dtd
+        line_start: 41
+        line_end: 44
+        excerpt: |
+          <!ELEMENT Mail (Address, Subject, Content)>
+          <!ELEMENT Address (#PCDATA)>
+          <!ELEMENT Subject (#PCDATA)>
+          <!ELEMENT Content (#PCDATA)>
+    stack_metadata:
+      framework: EJB 2.0 MDB
+      ejb.bean: MailerMDB
+      ejb.transaction: Required
+      jms.queue: javax.jms.Queue (name bound at deploy)
+  - record_key: CUSTNOTIF-REQ-0002
+    kind: requirement
+    capability_key: customer-notifications
+    requirement: The system SHALL send each notification as an HTML-formatted email via the container-provided mail session, with the sender defaulted by the mail session, the recipients parsed from the address string leniently (non-strict), the given subject, an X-Mailer header of "JavaMailer" and the current date as sent date.
+    confidence: medium
+    confidence_basis: Single class enforces it; no tests or docs.
+    risk_class: operational
+    basis: MailHelper builds a MimeMessage with fixed content type text/html and fixed headers.
+    plain_text: Notification emails are sent as formatted (HTML) messages from the store's default sender, may name more than one recipient, and carry the send date.
+    technical_note: MailHelper.createAndSendMail looks up java:comp/env/mail/MailSession (JNDINames.MAIL_SESSION; resource-ref in ejb-jar.xml), msg.setFrom() with no argument, InternetAddress.parse(addr,false), content type text/html. The Locale parameter is accepted but unused; MDB passes Locale.getDefault().
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/ejb/MailHelper.java
+        line_start: 73
+        line_end: 85
+        excerpt: |
+          Session session = (Session) ic.lookup(JNDINames.MAIL_SESSION);
+          Message msg = new MimeMessage(session);
+          msg.setFrom();
+          msg.setRecipients(Message.RecipientType.TO,
+                   InternetAddress.parse(emailAddress, false));
+          msg.setSubject(subject);
+          String contentType = "text/html";
+          msg.setHeader("X-Mailer", "JavaMailer");
+          msg.setSentDate(new Date());
+          Transport.send(msg);
+      - path: legacy-source/app/src/components/mailer/src/ejb-jar.xml
+        line_start: 58
+        line_end: 63
+        excerpt: |
+          <resource-ref>
+             <res-ref-name>mail/MailSession</res-ref-name>
+             <res-type>javax.mail.Session</res-type>
+    stack_metadata:
+      framework: JavaMail
+      ejb.bean: MailerMDB
+  - record_key: CUSTNOTIF-RULE-0003
+    kind: business-rule
+    capability_key: customer-notifications
+    requirement: GIVEN a mail message fails to send (mail session missing, bad address or transport failure) WHEN the queue message is processed THEN the system SHALL discard the failure without error, so the message is consumed and not redelivered, and no email is sent.
+    confidence: high
+    confidence_basis: Stated by code (catch block ignoring MailerAppException) and an explicit comment; MailHelper wraps all exceptions.
+    risk_class: operational
+    basis: MailHelper converts any exception to MailerAppException; the MDB deliberately ignores it.
+    plain_text: If an email cannot be sent, nothing is reported and no retry occurs; the customer simply does not get the email.
+    technical_note: Comment in MailerMDB says to ignore since the user probably forgot to set up the mail server. Error is printed only to System.err in MailHelper.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/ejb/MailerMDB.java
+        line_start: 83
+        line_end: 85
+        excerpt: |
+          } catch (MailerAppException me) {
+            //throw new EJBException("MailerMDB.onMessage" + me);
+            //ignore since user probably forgot to set up mail server
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/ejb/MailHelper.java
+        line_start: 86
+        line_end: 88
+        excerpt: |
+          } catch (Exception e) {
+              System.err.print("createAndSendMail exception : " + e);
+              throw new MailerAppException("Failure while sending mail");
+    stack_metadata:
+      ejb.bean: MailerMDB
+  - record_key: CUSTNOTIF-RULE-0004
+    kind: business-rule
+    capability_key: customer-notifications
+    requirement: GIVEN a queue message that is not a valid Mail XML document or cannot be read as text WHEN it is processed THEN the system SHALL raise a system error for the message rather than ignoring it.
+    confidence: medium
+    confidence_basis: One clear place; redelivery behaviour depends on container, not seen.
+    risk_class: operational
+    basis: XMLDocumentException and JMSException are rethrown as EJBException.
+    plain_text: A malformed notification request is treated as a failure, unlike a delivery failure, which is silently dropped.
+    technical_note: Container-managed transaction Required on onMessage, so the throw rolls back and may trigger redelivery per provider settings.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/ejb/MailerMDB.java
+        line_start: 86
+        line_end: 90
+        excerpt: |
+          } catch (XMLDocumentException xde) {
+            throw new EJBException("MailerMDB.onMessage" + xde);
+          } catch(JMSException je) {
+            throw new EJBException("MailerMDB.onMessage" + je);
+          }
+    stack_metadata:
+      ejb.bean: MailerMDB
+      ejb.transaction: Required
+suspected_defects:
+  - capability_key: customer-notifications
+    record_keys: [CUSTNOTIF-RULE-0003]
+    severity: medium
+    category: error-swallowed
+    title: Mail send failures are silently discarded
+    description: >
+      Any failure to send is converted to an exception that the message handler ignores, so the notification is lost with no retry, alert or record other than a line on standard error.
+    traces:
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/ejb/MailerMDB.java
+        line_start: 83
+        line_end: 85
+  - capability_key: customer-notifications
+    record_keys: [CUSTNOTIF-REQ-0002]
+    severity: low
+    category: other
+    title: Locale parameter is unused, so mail is never localised
+    description: >
+      The handler passes the server default locale and the mail helper ignores it; the localization capability implies locale-specific mail is not actually implemented here.
+    traces:
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/ejb/MailerMDB.java
+        line_start: 82
+        line_end: 82
+findings: []
