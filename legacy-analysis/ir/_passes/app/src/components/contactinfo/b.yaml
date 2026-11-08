@@ -1,0 +1,212 @@
+records:
+  - record_key: CUST-ENT-0001
+    kind: entity
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL hold a contact record consisting of given name, family name, telephone, email and exactly one associated postal address.
+    confidence: high
+    confidence_basis: >
+      The EJB descriptor declares the four fields and the address relationship, the bean class has matching accessors, and the XML DTD repeats the same shape. No database DDL was seen in this module.
+    risk_class: regulated
+    basis: >
+      Container-managed fields telephone, familyName, email, givenName and a one-to-one relationship field address.
+    plain_text: >
+      Each customer contact consists of a first name, last name, phone number, email address and one postal address.
+    technical_note: >
+      CMP 2.x entity ContactInfoEJB with cmr-field address (multiplicity One). ContactInfo.dtd lists FamilyName, GivenName, Address, Email, Phone.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/contactinfo/src/ejb-jar.xml
+        line_start: 96
+        line_end: 143
+        excerpt: |
+          <cmp-field> ... telephone, familyName, email, givenName ... <cmr-field-name>address</cmr-field-name>
+      - path: legacy-source/app/src/components/contactinfo/src/com/sun/j2ee/blueprints/contactinfo/ejb/ContactInfoEJB.java
+        line_start: 56
+        line_end: 75
+        excerpt: |
+          public abstract String getFamilyName(); ... public abstract AddressLocal getAddress();
+      - path: legacy-source/app/src/components/contactinfo/src/com/sun/j2ee/blueprints/contactinfo/rsrc/schemas/ContactInfo.dtd
+        line_start: 38
+        line_end: 42
+        excerpt: |
+          <!ELEMENT ContactInfo (FamilyName, GivenName, Address, Email, Phone)>
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: ContactInfoEJB
+  - record_key: CUST-RULE-0002
+    kind: business-rule
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL create a new, empty address for a contact when the contact is created without data, and SHALL create a new address copied from the supplied contact data when created from a data object.
+    confidence: medium
+    confidence_basis: >
+      Read in one class only (post-create methods); behaviour is clear but no test or second source.
+    risk_class: operational
+    basis: >
+      ejbPostCreate() creates a blank address through the address home; ejbPostCreate(ContactInfo) creates one from the data's address.
+    plain_text: >
+      Every new contact automatically gets its own address record, blank or filled from the details provided.
+    technical_note: >
+      Address EJB home is looked up via ServiceLocator under JNDINames.ADDR_EJB.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/contactinfo/src/com/sun/j2ee/blueprints/contactinfo/ejb/ContactInfoEJB.java
+        line_start: 81
+        line_end: 91
+        excerpt: |
+          AddressLocal address = adh.create();
+          setAddress(address);
+      - path: legacy-source/app/src/components/contactinfo/src/com/sun/j2ee/blueprints/contactinfo/ejb/ContactInfoEJB.java
+        line_start: 117
+        line_end: 127
+        excerpt: |
+          AddressLocal address = adh.create(contactInfo.getAddress());
+          setAddress(address);
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: ContactInfoEJB
+      ejb.transaction: Required
+  - record_key: CUST-RULE-0003
+    kind: business-rule
+    capability_key: customer-accounts
+    requirement: >
+      GIVEN a contact is created with an existing address, WHEN creation completes, THEN the system SHALL link the contact to that supplied address rather than creating a new one.
+    confidence: medium
+    confidence_basis: >
+      One clear place. Note the address argument is ignored in ejbCreate and only used in post-create.
+    risk_class: operational
+    basis: >
+      ejbPostCreate(..., address) calls setAddress(address).
+    plain_text: >
+      A contact can be created pointing at an address that already exists.
+    technical_note: >
+      Five-argument create (given, family, phone, email, AddressLocal).
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/contactinfo/src/com/sun/j2ee/blueprints/contactinfo/ejb/ContactInfoEJB.java
+        line_start: 93
+        line_end: 107
+        excerpt: |
+          setGivenName(givenName); ... public void ejbPostCreate(...AddressLocal address) { setAddress(address); }
+    stack_metadata:
+      ejb.bean: ContactInfoEJB
+      ejb.transaction: Required
+  - record_key: CUST-RULE-0004
+    kind: business-rule
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL delete a contact's address when the contact is deleted.
+    confidence: medium
+    confidence_basis: >
+      Declared once in the descriptor (cascade-delete); bean ejbRemove is empty so no second place.
+    risk_class: operational
+    basis: >
+      cascade-delete on the Address role of the ContactInfo-Address relationship.
+    plain_text: >
+      Removing a contact also removes its address.
+    technical_note: >
+      Container-enforced cascade-delete in ejb-jar.xml; remove runs in a Required transaction.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/contactinfo/src/ejb-jar.xml
+        line_start: 139
+        line_end: 147
+        excerpt: |
+          <ejb-relationship-role-name>AddressEJB</ejb-relationship-role-name>
+          <multiplicity>One</multiplicity>
+          <cascade-delete />
+    stack_metadata:
+      ejb.bean: ContactInfoEJB
+      ejb.transaction: Required
+  - record_key: CUST-REQ-0005
+    kind: requirement
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL expose a contact as a single data object containing given name, family name, phone, email and address details.
+    confidence: medium
+    confidence_basis: >
+      One clear implementation (getData); consumers are outside this module.
+    risk_class: presentational
+    basis: >
+      getData copies each field and the address data into a ContactInfo transfer object.
+    plain_text: >
+      A contact can be read back as one complete set of details including its address.
+    technical_note: >
+      Telephone maps to the "phone" property of the transfer object.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/contactinfo/src/com/sun/j2ee/blueprints/contactinfo/ejb/ContactInfoEJB.java
+        line_start: 129
+        line_end: 137
+        excerpt: |
+          contactInfo.setPhone(getTelephone());
+          contactInfo.setAddress(getAddress().getData());
+    stack_metadata:
+      ejb.bean: ContactInfoEJB
+      ejb.transaction: Required
+  - record_key: CUST-RULE-0006
+    kind: business-rule
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL NOT impose any format, length or required-value checks on contact name, telephone or email within this component.
+    confidence: low
+    confidence_basis: >
+      Inferred from absence: no validation found here; validation may exist in other modules.
+    risk_class: regulated
+    basis: >
+      Setters assign values directly; no validation code or constraint in the descriptor.
+    plain_text: >
+      This part of the system does not check that names, phone numbers or emails are filled in or well formed.
+    technical_note: >
+      Any validation must live in callers (web tier / account component); not verified here.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/contactinfo/src/com/sun/j2ee/blueprints/contactinfo/ejb/ContactInfoEJB.java
+        line_start: 93
+        line_end: 115
+        excerpt: |
+          setGivenName(givenName); setFamilyName(familyName); setTelephone(telephone); setEmail(email);
+    stack_metadata:
+      ejb.bean: ContactInfoEJB
+  - record_key: CUST-REQ-0007
+    kind: integration
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL support representing a contact as an XML document with elements FamilyName, GivenName, Address, Email and Phone in that order.
+    confidence: low
+    confidence_basis: >
+      Only a DTD was found; no code in this module reads or writes the XML, so it is unclear it is used.
+    dispute:
+      reason: unresolved-reachability
+      detail: >
+        No producer or consumer of the DTD in this module; a grep of other modules for ContactInfo.dtd would settle it.
+    risk_class: operational
+    basis: >
+      ContactInfo.dtd defines the document structure.
+    plain_text: >
+      Contact details have a defined exchange layout (last name, first name, address, email, phone).
+    technical_note: >
+      Imports the Address DTD as external entity.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/contactinfo/src/com/sun/j2ee/blueprints/contactinfo/rsrc/schemas/ContactInfo.dtd
+        line_start: 38
+        line_end: 49
+        excerpt: |
+          <!ELEMENT ContactInfo (FamilyName, GivenName, Address, Email, Phone)>
+    stack_metadata:
+      framework: DTD
+findings: []
+suspected_defects:
+  - capability_key: customer-accounts
+    record_keys: [CUST-RULE-0002]
+    severity: low
+    category: error-swallowed
+    title: Address lookup failure is reported as a generic create error
+    description: >
+      A failure looking up the address service in post-create is converted into a CreateException with a fixed message, discarding the original cause.
+    traces:
+      - path: legacy-source/app/src/components/contactinfo/src/com/sun/j2ee/blueprints/contactinfo/ejb/ContactInfoEJB.java
+        line_start: 88
+        line_end: 90
