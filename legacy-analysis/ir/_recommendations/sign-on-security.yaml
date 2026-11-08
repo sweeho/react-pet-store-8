@@ -1,0 +1,102 @@
+recommendations:
+  - record_key: SIGN-RULE-0003
+    recommendation: edit
+    confidence: medium
+    reason: >
+      Code and DDL agree on plain-text exact match; recommend accepting the behaviour but flagging plain-text storage as a legacy defect for the Business Owner.
+    edited_requirement: >
+      Code and DDL agree on plain-text exact match; recommend accepting the behaviour but flagging plain-text storage as a legacy defect for the Business Owner.
+  - record_key: SIGN-ON-SECURITY-REQ-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Config and filter mapping agree across passes.
+  - record_key: SIGN-RULE-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Both signon passes agree; direct sign-on without original URL is unhandled.
+  - record_key: SIGN-RULE-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes agree; 31-day literal has no authoritative source.
+  - record_key: SIGN-RULE-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Password max length value was not recovered; SME must supply it.
+  - record_key: SIGN-ENT-0007
+    recommendation: accept
+    confidence: high
+    reason: >
+      Matches DDL.
+  - record_key: SIGNON-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Matches DDL.
+  - record_key: SIGN-ON-SECURITY-ENTITY-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      DDL in two dialects agrees.
+  - record_key: CUST-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      FK constraints in DDL.
+  - record_key: SEC-REQ-0012
+    recommendation: accept
+    confidence: high
+    reason: >
+      web.xml 15 minutes confirmed by three passes.
+  - record_key: SGN-REQ-0002
+    recommendation: edit
+    confidence: low
+    reason: >
+      30 minutes is the framework web.xml and conflicts with 15 (storefront) and 54 (admin); goes to Intent for the Business Owner.
+    edited_requirement: >
+      30 minutes is the framework web.xml and conflicts with 15 (storefront) and 54 (admin); goes to Intent for the Business Owner.
+  - record_key: SUPF-RULE-0009
+    recommendation: accept
+    confidence: high
+    reason: >
+      web.xml constraint and JSP check agree; transport guarantee NONE noted.
+  - record_key: SIGN-ON-SECURITY-REQ-0003
+    recommendation: accept
+    confidence: high
+    reason: >
+      Listener and action read directly.
+  - record_key: SIGN-ON-SECURITY-REQ-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Single action read.
+  - record_key: SEC-REQ-0013
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code read; first-time user path relies on swallowed exception.
+  - record_key: SGN-REQ-0001
+    recommendation: reject
+    confidence: low
+    reason: >
+      Disputed: no code reads requiresSignin; the storefront uses SignOnFilter instead.
+  - record_key: SUPPLIER-REQ-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      ejb-jar.xml declared; confirm intent with Business Owner as a security gap.
+  - record_key: CUSTACC-BR-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      ejb-jar.xml declared; same security-gap question.
+  - record_key: SIGN-SCR-0001
+    recommendation: edit
+    confidence: medium
+    reason: >
+      Keep the form; demo credentials pre-filled in markup are a legacy defect the SME should decide to carry over.
+    edited_requirement: >
+      Keep the form; demo credentials pre-filled in markup are a legacy defect the SME should decide to carry over.

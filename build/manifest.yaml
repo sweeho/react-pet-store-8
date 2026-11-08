@@ -1,0 +1,329 @@
+schemaVersion: 1
+program:
+  key: legacy-petstore
+  title: Java Pet Store 1.3.2 rebuild
+  source: extraction
+  generator: vortex-spec-extraction
+  sourceRef: vortex/legacy-spec/sx-0001
+capabilities:
+  - slug: localization
+    title: "Localization"
+    order: 1
+    dependsOn: []
+    priority: 0
+    change:
+      dir: openspec/changes/sx-localization
+      specCapabilities:
+        - localization
+    canvas:
+      problem: "Shoppers use English, Japanese and Chinese; the storefront must pick, switch and apply a locale consistently across screens, catalog text, number formats, mail and per-locale limits."
+      solution: "Build session locale handling, a language switch, locale-keyed catalog and screen text, request encoding, locale number formatting and the common page layout."
+      userStories:
+        - "As a shopper, I want to switch language, so that I can browse and order in English, Japanese or Chinese."
+      acceptanceCriteria:
+        - "Locale change — Given a shopper on any page, when they choose a locale, then later pages render in that locale"
+        - "Page layout — Given any screen, then it shows a title, banner, body and footer from the common template"
+      outOfScope:
+        - "Locale-specific approval limits (owned by order-approval)"
+        - "Catalog schema (owned by catalog-browsing)"
+      risksAssumptions: []
+      techStack: []
+      affectedCode: []
+      screens:
+        - "Common page layout: every page shares a header banner, body area and footer assembled from a template with title, banner, body and footer parts per screen and locale"
+    evidence:
+      irRefs: ["LOC-REQ-0001", "LOC-REQ-0002", "LOC-BR-0003", "LOC-BR-0004", "LOC-REQ-0005", "LOC-WF-0010", "CAT-SCR-0012", "LOC-REQ-0014", "LOC-REQ-0015", "LOCALIZATION-REQ-0001", "LOCALIZATION-REQ-0002", "LOC-BR-0001", "LOC-BR-0002", "CART-REQ-0008", "CATB-REQ-0007", "LOCAL-BR-0001", "BATCH-REQ-0003", "CAT-ENT-0001", "LOCALIZATION-ENT-0001", "LOCALIZATION-ENT-0002", "LOCALIZATION-ENT-0003", "CATALOG-RULE-0001", "CUSTACCT-RULE-0002", "CAT-ENT-0002", "CAT-ENT-0003", "WORKFLOW-ENT-0001", "ORD-REQ-0002", "CATBRW-REQ-0001", "LOCA-REQ-0001", "LOC-REQ-0004", "LOC-REQ-0003", "LOCAL-REQ-0001", "LOCAL-REQ-0002", "LOCAL-REQ-0003", "LOCAL-REQ-0004", "LOCALIZATION-REQ-0008", "CATA-REQ-0007", "LOCALIZATION-BR-0002"]
+      reviewedBy: null
+      reviewedAt: null
+  - slug: sign-on-security
+    title: "Sign-on and access control"
+    order: 2
+    dependsOn: []
+    priority: 0
+    change:
+      dir: openspec/changes/sx-sign-on-security
+      specCapabilities:
+        - sign-on-security
+    canvas:
+      problem: "Customers, administrators and suppliers must be authenticated and limited to the modules their role allows."
+      solution: "Build credential authentication, protected-screen interception, remember-user-name, sign-off, session timeouts and role restriction of admin and supplier modules."
+      userStories:
+        - "As a customer, I want to sign on and be remembered, so that I can order without retyping my user name."
+        - "As an administrator, I want admin and supplier functions restricted to my role, so that customers cannot reach them."
+      acceptanceCriteria:
+        - "Authentication — Given valid credentials, when the user signs on, then a session is established"
+        - "Role restriction — Given a non-administrator, when they request the supplier inventory handler, then access is refused"
+        - "Session timeout — Given an idle session, then it expires after the configured timeout"
+      outOfScope:
+        - "Customer profile editing (customer-accounts)"
+        - "Password hashing redesign: legacy stores plain text and the SME must decide"
+      risksAssumptions: []
+      techStack: []
+      affectedCode: []
+      screens:
+        - "Admin sign-in screen: a form with User ID and Password fields, pre-filled with the demo credentials jps_admin / admin, posting to the container security check"
+    evidence:
+      irRefs: ["SIGN-RULE-0003", "SIGN-ON-SECURITY-REQ-0001", "SIGN-RULE-0002", "SIGN-RULE-0004", "SIGN-RULE-0005", "SIGN-ENT-0007", "SIGNON-ENT-0001", "SIGN-ON-SECURITY-ENTITY-0001", "CUST-ENT-0001", "SEC-REQ-0012", "SGN-REQ-0002", "SUPF-RULE-0009", "SIGN-ON-SECURITY-REQ-0003", "SIGN-ON-SECURITY-REQ-0004", "SEC-REQ-0013", "SGN-REQ-0001", "SUPPLIER-REQ-0004", "CUSTACC-BR-0005", "SIGN-SCR-0001"]
+      reviewedBy: null
+      reviewedAt: null
+  - slug: catalog-browsing
+    title: "Catalog browsing and search"
+    order: 3
+    dependsOn: ["localization"]
+    priority: 0
+    change:
+      dir: openspec/changes/sx-catalog-browsing
+      specCapabilities:
+        - catalog-browsing
+    canvas:
+      problem: "Shoppers need to find pets by category, product and item and by keyword."
+      solution: "Build category, product and item lookup by locale with paging and keyword search over the catalog schema."
+      userStories:
+        - "As a shopper, I want to browse categories, products and items, so that I can find a pet to buy."
+        - "As a shopper, I want to search by keyword, so that I can find a pet quickly."
+      acceptanceCriteria:
+        - "Browse — Given a category id and locale, when requested, then its products are listed in that locale"
+        - "Paging — Given more results than a page, then results are paged"
+        - "Search — Given a keyword, then matching products are returned"
+      outOfScope:
+        - "Cart handling (shopping-cart)"
+        - "Catalog population batch checks (batch-operations)"
+      risksAssumptions: []
+      techStack: []
+      affectedCode: []
+    evidence:
+      irRefs: ["CATALOG-BROWSING-REQ-0001", "CATALOG-BROWSING-REQ-0002", "CATALOG-BROWSING-REQ-0003", "CATALOG-BROWSING-REQ-0004", "CATALOG-BROWSING-RULE-0005", "CATALOG-BROWSING-REQ-0006", "CATALOG-BROWSING-RULE-0007", "CATALOG-BROWSING-REQ-0009", "CATA-REQ-0001", "CATA-BR-0002", "CATA-BR-0003", "CATA-REQ-0004", "CATA-BR-0005", "CATA-REQ-0006", "CATA-REQ-0008", "CATALOG-ENT-0001", "CATALOG-RULE-0002", "CAT-ENT-0001", "CAT-REQ-0001", "CAT-REQ-0002", "CATALOG-BROWSING-ENT-0001", "CATB-REQ-0001", "CATB-REQ-0002", "CATB-REQ-0003", "CATB-REQ-0004", "CATB-REQ-0005", "CATB-REQ-0006", "CATB-REQ-0008", "CATB-REQ-0009", "ITEM-ENT-0001"]
+      reviewedBy: null
+      reviewedAt: null
+  - slug: customer-accounts
+    title: "Customer accounts"
+    order: 4
+    dependsOn: ["sign-on-security"]
+    priority: 0
+    change:
+      dir: openspec/changes/sx-customer-accounts
+      specCapabilities:
+        - customer-accounts
+    canvas:
+      problem: "Shoppers need accounts holding profile, contact info, address and payment card, with duplicate-account protection."
+      solution: "Build customer creation and update, account status, profile preferences and defaults, contact and address rules, duplicate user handling and the my-list panel."
+      userStories:
+        - "As a new shopper, I want to create an account, so that I can place orders."
+        - "As a customer, I want to edit my profile and address, so that my details stay current."
+      acceptanceCriteria:
+        - "Create — Given a new user name and valid details, then account, profile, contact and address are created"
+        - "Duplicate — Given an existing user name, when creating, then the duplicate-account outcome is shown"
+        - "Update — Given a signed-on customer, when they edit details, then the changes persist"
+      outOfScope:
+        - "Credential checking (sign-on-security)"
+        - "Order entry (checkout-payment)"
+      risksAssumptions: []
+      techStack: []
+      affectedCode: []
+    evidence:
+      irRefs: ["ACC-REQ-0008", "ACC-REQ-0009", "ACC-REQ-0010", "LOC-REQ-0014", "CUSTOMER-ACCOUNTS-REQ-0001", "CUSTOMER-ACCOUNTS-REQ-0002", "CUSTOMER-ACCOUNTS-REQ-0003", "CUSTOMER-ACCOUNTS-REQ-0004", "CUSTOMER-ACCOUNTS-REQ-0005", "CUSTOMER-ACCOUNTS-REQ-0006", "CUST-ENT-0001", "CUST-RULE-0002", "CUST-RULE-0003", "CUST-REQ-0004", "CUST-REQ-0005", "CUST-RULE-0006", "CUST-REQ-0007", "CUST-RULE-0001", "CUST-REQ-0001", "CUSTOMER-ACCOUNTS-ENTITY-0001", "CUSTACC-BR-0001", "CUSTACC-BR-0002", "CUSTACC-BR-0003", "CUSTACC-BR-0004", "CUSTACC-ENT-0001", "CUSTACC-REQ-0001", "CUSTACC-REQ-0002", "CUSTACC-BR-0005", "CUSTACC-ENT-0004", "SIGN-REQ-0006", "SIGN-WF-0006", "ACCOUNTS-ENT-0001", "ACCOUNTS-ENT-0002", "CUSTACCT-ENT-0001", "CUSTACCT-RULE-0001", "ADDR-ENT-0001", "CONTACT-ENT-0001", "ACCT-ENT-0001"]
+      reviewedBy: null
+      reviewedAt: null
+  - slug: shopping-cart
+    title: "Shopping cart"
+    order: 5
+    dependsOn: ["catalog-browsing"]
+    priority: 0
+    change:
+      dir: openspec/changes/sx-shopping-cart
+      specCapabilities:
+        - shopping-cart
+    canvas:
+      problem: "Shoppers collect items before ordering and need accurate lines, quantities and totals."
+      solution: "Build the per-session cart (item id to quantity) with add, remove and update rules, item count, line presentation, totals and empty-cart handling."
+      userStories:
+        - "As a shopper, I want to add, change and remove items, so that my cart matches what I want to buy."
+      acceptanceCriteria:
+        - "Add — Given an item not in the cart, when added, then it appears with quantity one"
+        - "Empty cart — Given an empty cart, then a message and a Check Out link are shown"
+        - "Totals — Given lines in the cart, then line totals and the subtotal reflect quantities and prices"
+      outOfScope:
+        - "Order submission (checkout-payment)"
+        - "Catalog lookup (catalog-browsing)"
+      risksAssumptions: []
+      techStack: []
+      affectedCode: []
+    evidence:
+      irRefs: ["ORD-REQ-0013", "SHOP-ENT-0001", "SHOP-REQ-0001", "SHOP-REQ-0002", "SHOP-REQ-0004", "SHOP-BR-0002", "SHOP-BR-0004", "SHOP-REQ-0005", "SHOP-REQ-0003", "SHOP-REQ-0006", "SHOP-REQ-0007", "SHOP-ENT-0008", "CART-BR-0010", "CART-REQ-0011", "CART-REQ-0006", "CART-REQ-0007", "SHOPPING-CART-REQ-0002", "SHOPPING-CART-REQ-0003"]
+      reviewedBy: null
+      reviewedAt: null
+  - slug: checkout-payment
+    title: "Checkout and payment"
+    order: 6
+    dependsOn: ["shopping-cart", "customer-accounts"]
+    priority: 0
+    change:
+      dir: openspec/changes/sx-checkout-payment
+      specCapabilities:
+        - checkout-payment
+    canvas:
+      problem: "A shopper must turn a cart into an order with validated contact and card details."
+      solution: "Build the order entry form with validation, credit card acceptance and order submission producing a purchase order."
+      userStories:
+        - "As a shopper, I want to enter contact and card details and submit, so that my order is placed."
+      acceptanceCriteria:
+        - "Validation — Given missing or malformed contact or card fields, when submitted, then the order is rejected with errors"
+        - "Submit — Given a valid form and non-empty cart, then the order is submitted and a confirmation is shown"
+        - "Empty cart — Given an empty cart, when submitting, then an error screen is shown"
+      outOfScope:
+        - "Approval decisions (order-approval)"
+        - "Supplier dispatch (supplier-fulfilment)"
+      risksAssumptions: []
+      techStack: []
+      affectedCode: []
+    evidence:
+      irRefs: ["CHK-ENT-0001", "CARD-ENT-0001", "CHECKOUT-ENT-0001", "CHK-RULE-0001", "CHK-RULE-0002", "CHK-BR-0001", "CHK-BR-0002", "CHK-RULE-0003", "CHK-INT-0001", "CHK-REQ-0001", "CHECKOUT-ENT-0002", "CHECKOUT-PAYMENT-ENTITY-0001", "CHKO-ENT-0001", "CHECKOUT-RULE-0001", "CHECKOUT-PAYMENT-REQ-0001", "CHK-REQ-0004", "CHECKOUT-PAYMENT-REQ-0002", "CHK-REQ-0005", "CHECKOUT-PAYMENT-REQ-0003", "CHK-REQ-0002", "CHECKOUT-PAYMENT-REQ-0004", "CHKP-INT-0001", "CHKPAY-REQ-0001", "LOC-REQ-0014", "ORDER-PROCESSING-WORKFLOW-BUSINESS-RULE-0001", "ORDP-RULE-0001", "WORKFLOW-ENT-0001", "CTR-ENT-0001", "BATCH-REQ-0001", "BATCH-OPERATIONS-REQ-0001"]
+      reviewedBy: null
+      reviewedAt: null
+  - slug: order-processing-workflow
+    title: "Order processing workflow"
+    order: 7
+    dependsOn: ["checkout-payment"]
+    priority: 0
+    change:
+      dir: openspec/changes/sx-order-processing-workflow
+      specCapabilities:
+        - order-processing-workflow
+    canvas:
+      problem: "Orders move through states and between modules by asynchronous hand-offs that must stay consistent."
+      solution: "Build order intake, the PENDING/APPROVED/DENIED/COMPLETED state machine, identifier generation, asynchronous hand-off and the request pipeline driving them."
+      userStories:
+        - "As an operator, I want each order tracked through its lifecycle, so that none is lost or processed twice."
+      acceptanceCriteria:
+        - "Intake — Given a submitted order, then a purchase order and a PENDING manager record exist"
+        - "Transitions — Given an order, then status changes only among PENDING, APPROVED, DENIED and COMPLETED"
+        - "Identifiers — Given a new order, then a unique id is generated from a named counter"
+      outOfScope:
+        - "Approval thresholds (order-approval)"
+        - "Mail content (customer-notifications)"
+      risksAssumptions: []
+      techStack: []
+      affectedCode: []
+    evidence:
+      irRefs: ["BATCH-REQ-0007", "CHK-INT-0003", "CTR-ENT-0001", "OPW-BR-0004", "OPW-BR-0005", "OPW-ENT-0001", "OPW-REQ-0001", "OPW-REQ-0002", "OPW-REQ-0003", "OPW-REQ-0004", "OPW-REQ-0006", "OPW-RULE-0001", "OPW-WORKFLOW-0001", "OPW-WORKFLOW-0003", "ORD-REQ-0001", "ORD-REQ-0002", "ORD-WF-0008", "ORD-WF-0009", "ORD-WF-0011", "ORDA-REQ-0003", "ORDAPP-REQ-0003", "ORDER-PROCESSING-WORKFLOW-BR-0001", "ORDER-PROCESSING-WORKFLOW-BR-0002", "ORDER-PROCESSING-WORKFLOW-BR-0003", "ORDER-PROCESSING-WORKFLOW-BUSINESS-RULE-0001", "ORDER-PROCESSING-WORKFLOW-ENT-0001", "ORDER-PROCESSING-WORKFLOW-ENTITY-0001", "ORDER-PROCESSING-WORKFLOW-REQ-0001", "ORDER-PROCESSING-WORKFLOW-REQ-0002", "ORDER-PROCESSING-WORKFLOW-REQ-0003", "ORDER-PROCESSING-WORKFLOW-REQ-0004", "ORDER-PROCESSING-WORKFLOW-WF-0001", "ORDP-BR-0001", "ORDP-INT-0001", "ORDP-REQ-0001", "ORDP-REQ-0002", "ORDP-RULE-0001", "ORDPROC-BR-0001", "ORDPROC-BR-0002", "ORDPROC-INT-0001", "ORDPROC-REQ-0001", "ORDPROC-REQ-0002", "ORDPROC-REQ-0003", "ORDPROC-RULE-0002", "ORDPROC-RULE-0003", "ORDPROC-WKF-0001", "ORDPW-BR-0002", "ORDPW-BR-0004", "ORDPW-BR-0006", "ORDPW-REQ-0001", "ORDPW-REQ-0003", "ORDPW-REQ-0005", "ORDWF-BR-0003", "ORDWF-WF-0001", "ORDWF-WF-0002", "ORDWF-WF-0004", "PROCESS-ENT-0001", "PROCESS-ENT-0002", "PROCESS-REQ-0001", "SHOP-INT-0001", "SHOP-INT-0002", "SHOP-REQ-0003", "SUPF-INTG-0006", "WKFL-INT-0001", "WKFL-REQ-0001", "WORKFLOW-ENT-0001", "WORKFLOW-RULE-0001"]
+      reviewedBy: null
+      reviewedAt: null
+  - slug: order-approval
+    title: "Order approval"
+    order: 8
+    dependsOn: ["order-processing-workflow", "sign-on-security"]
+    priority: 0
+    change:
+      dir: openspec/changes/sx-order-approval
+      specCapabilities:
+        - order-approval
+    canvas:
+      problem: "Orders above a locale limit need human approval; others pass automatically."
+      solution: "Build auto-approval by locale and total, manual approve and deny by an administrator, the approval document exchange and the admin start page."
+      userStories:
+        - "As an administrator, I want to list and approve or deny pending orders, so that large orders are reviewed."
+        - "As a shopper, I want small orders approved automatically, so that they ship without delay."
+      acceptanceCriteria:
+        - "Auto approval — Given an order total within the locale limit, then it is approved automatically"
+        - "Manual approval — Given a pending order, when an administrator approves or denies it, then its status changes accordingly"
+        - "Order listing — Given a status, then orders with that status are listed with id, user, date, value and status"
+      outOfScope:
+        - "Purchase order dispatch to suppliers (supplier-fulfilment)"
+        - "Approval mail (customer-notifications)"
+      risksAssumptions: []
+      techStack: []
+      affectedCode: []
+      screens:
+        - "Admin start page: offers two actions, launch the rich admin client and log out"
+    evidence:
+      irRefs: ["ORDAPP-RULE-0001", "ORDAPP-BR-0001", "APPR-REQ-0001", "ORDA-BR-0001", "ORDAPP-RULE-0002", "ORDAPP-BR-0002", "ORDP-INT-0002", "ORDAPP-BUSINESS-RULE-0002", "ORDAPP-REQ-0001", "ORDAPP-WORKFLOW-0001", "ORDAPP-REQ-0002", "ORDA-REQ-0001", "ORDAPP-REQ-0003", "ORDAPP-WF-0001", "ORDA-REQ-0002", "ORDAPP-REQ-0004", "ORDAPP-REQ-0005", "ORDAPP-REQ-0006", "ORDAPP-INT-0001", "ORDA-REQ-0004", "ORDA-WF-0001", "ORDAPP-SCR-0001", "APPROVAL-ENT-0001", "LOCAL-BR-0001", "CUSTNOT-REQ-0001", "CUSN-INT-0001", "BATC-REQ-0002"]
+      reviewedBy: null
+      reviewedAt: null
+  - slug: supplier-fulfilment
+    title: "Supplier fulfilment"
+    order: 9
+    dependsOn: ["order-processing-workflow", "order-approval"]
+    priority: 0
+    change:
+      dir: openspec/changes/sx-supplier-fulfilment
+      specCapabilities:
+        - supplier-fulfilment
+    canvas:
+      problem: "Approved orders must be fulfilled by suppliers from inventory, shipped and invoiced back."
+      solution: "Build supplier purchase order creation on approval, fulfilment against inventory, invoicing, and the administrator stock update."
+      userStories:
+        - "As a supplier administrator, I want to update stock, so that pending purchase orders are fulfilled and invoiced."
+      acceptanceCriteria:
+        - "Dispatch — Given an approved order, then a supplier purchase order is created"
+        - "Fulfilment — Given stock for a pending purchase order, when inventory is updated, then it is shipped and invoiced"
+        - "Invoice — Given an invoice, then the original order line quantity shipped is updated"
+      outOfScope:
+        - "Order approval rules (order-approval)"
+        - "Mail sending (customer-notifications)"
+      risksAssumptions: []
+      techStack: []
+      affectedCode: []
+    evidence:
+      irRefs: ["SUPFUL-INT-0001", "OPW-WORKFLOW-0002", "SUPFUL-WF-0002", "SUPF-WF-0001", "SUPF-RULE-0001", "SUPF-RULE-0002", "SUPF-RULE-0003", "SUPF-REQ-0001", "SUPF-RULE-0005", "SUPF-WF-0002", "SUPF-WKFL-0007", "SUPF-RULE-0004", "SUPF-RULE-0008", "SUPF-SCRN-0010", "SUPF-ENT-0001", "SUPF-ENTY-0011", "SHOP-REQ-0003", "SUPPLIER-ENTITY-0001", "SUPPLIER-REQ-0001", "SUPPLIER-RULE-0001", "SUPPLIER-REQ-0002", "SUPPLIER-REQ-0003", "SUPPLIER-REQ-0004", "SUPPLIER-BR-0001", "SUPPLIER-BR-0002", "SUPPLIER-FULFILMENT-ENTITY-0001", "SUPPLIER-FULFILMENT-BUSINESS-RULE-0002", "SUPPLIER-FULFILMENT-BUSINESS-RULE-0003", "SUPPLIER-FULFILMENT-REQUIREMENT-0004", "SUPPLIER-FULFILMENT-REQUIREMENT-0005", "SUPPLIER-FULFILMENT-BUSINESS-RULE-0006", "SUPPLIER-FULFILMENT-BUSINESS-RULE-0007", "SUPPLIER-FULFILMENT-BR-0001", "SUPPLIER-FULFILMENT-BR-0002", "SUPPLIER-FULFILMENT-WF-0001", "SUPPLIER-FULFILMENT-REQ-0001", "SUPPLIER-FULFILMENT-INT-0001", "SUPPLIER-FULFILMENT-BR-0003", "SUPPLY-INTEGRATION-0001", "SUPPLY-INTEGRATION-0002", "SUPPLY-ENTITY-0003", "SUPPLY-BUSINESS-RULE-0004", "SUPPLY-BUSINESS-RULE-0005", "SUPFUL-REQ-0001", "SUPFUL-RULE-0002", "SUPFUL-REQ-0003", "SUPFUL-REQ-0004", "CUSTNOT-REQ-0001", "SUPF-INT-0001", "SUPF-INT-0002", "CUSN-INT-0001", "SUPP-REQ-0001", "BATCH-REQ-0004", "SUPPLIER-ENT-0001", "SUPPLIER-RULE-0002", "WORKFLOW-ENT-0001", "BATCH-REQ-0001", "INV-ENT-0001", "SUPPLIER-FULFILMENT-ENT-0001", "ORDER-PROCESSING-WORKFLOW-REQ-0001", "SUPL-ENT-0001", "SUPL-ENT-0002", "OPW-REQ-0001"]
+      reviewedBy: null
+      reviewedAt: null
+  - slug: customer-notifications
+    title: "Customer notifications"
+    order: 10
+    dependsOn: ["order-processing-workflow", "order-approval", "supplier-fulfilment"]
+    priority: 0
+    change:
+      dir: openspec/changes/sx-customer-notifications
+      specCapabilities:
+        - customer-notifications
+    canvas:
+      problem: "Customers need email at approval, shipment and completion."
+      solution: "Build the mail document, queue-driven mailer, failure semantics, order email triggers, subjects and locale, and per-email configuration switches."
+      userStories:
+        - "As a customer, I want an email when my order changes state, so that I know its progress."
+      acceptanceCriteria:
+        - "Trigger — Given an order approved, shipped or completed, then the matching email is queued"
+        - "Locale — Given the order locale, then the email subject and body use it"
+        - "Switch — Given an email disabled by configuration, then it is not sent"
+      outOfScope:
+        - "Order state changes (order-processing-workflow)"
+      risksAssumptions: []
+      techStack: []
+      affectedCode: []
+    evidence:
+      irRefs: ["CUSTNOTIF-INT-0001", "CN-WF-0001", "CUSTNOTIF-REQ-0002", "CN-REQ-0003", "CUSTNOTIF-RULE-0003", "CN-BR-0004", "CUSTNOTIF-RULE-0004", "CN-BR-0005", "CN-REQ-0002", "CUSN-INT-0001", "CUSTNOT-REQ-0001", "NOTIF-RULE-0001", "NOTIF-REQ-0001", "CUSTNOT-BR-0002", "CUSTNOT-BR-0003", "NOTI-REQ-0001", "CUSN-REQ-0001", "CNT-REQ-0001", "OPW-BR-0005"]
+      reviewedBy: null
+      reviewedAt: null
+  - slug: batch-operations
+    title: "Batch operations and reporting"
+    order: 11
+    dependsOn: ["order-processing-workflow", "catalog-browsing"]
+    priority: 0
+    change:
+      dir: openspec/changes/sx-batch-operations
+      specCapabilities:
+        - batch-operations
+    canvas:
+      problem: "Operations and Finance depend on nightly and weekly jobs signalled by exit codes."
+      solution: "Build backup, Finance order extract, aging and inventory reports, purge, catalog integrity check and health check jobs with their schedule, thresholds, outputs and failure signalling, plus admin sales reports and the catalog populate endpoint."
+      userStories:
+        - "As Finance, I want a nightly order extract, so that I can reconcile sales."
+        - "As an operator, I want jobs to signal failure by exit code and mail, so that I can rerun them."
+      acceptanceCriteria:
+        - "Chain — Given the nightly schedule, then jobs run in dependency order"
+        - "Failure — Given a job fails, then a non-zero exit code and notification are produced"
+        - "Reports — Given two dates, then revenue or quantity totals by category or item are returned"
+      outOfScope:
+        - "Real-time order handling (order-processing-workflow)"
+      risksAssumptions: []
+      techStack: []
+      affectedCode: []
+    evidence:
+      irRefs: ["BATCH-REQ-0001", "BATCH-REQ-0002", "BATCH-REQ-0003", "BATCH-REQ-0004", "BATCH-REQ-0005", "BATCH-REQ-0006", "BATCH-REQ-0007", "BATCH-REQ-0008", "BATCH-REQ-0009", "BATCH-REQ-0010", "BATCH-REQ-0011", "BATCH-REQ-0012", "BATCH-RULE-0004", "BATCH-RULE-0005", "BATCH-RULE-0007", "BATCH-RULE-0010", "BATCH-WF-0008", "BATC-BR-0001", "BATC-REQ-0001", "BATC-REQ-0002", "BATCH-OPERATIONS-REQ-0001", "CATB-REQ-0010"]
+      reviewedBy: null
+      reviewedAt: null
+artifacts:
+  openapi: api/openapi.yaml
+  erd: architecture/erd.mermaid
+  schema: architecture/schema.sql
+  agents: architecture/rebuild-guidance.md

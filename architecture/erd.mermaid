@@ -1,0 +1,111 @@
+%% EXTRACTED FROM LEGACY SOURCE — evidence of what exists, not a build target. Where this disagrees with a capability delta spec, the delta spec wins.
+%% Source: legacy-source/db/schema/petstore_oracle.sql (CMP entity beans and PopulateSQL.xml)
+erDiagram
+  CATEGORY ||--o{ CATEGORY_DETAILS : "localised by locale"
+  CATEGORY ||--o{ PRODUCT : contains
+  PRODUCT ||--o{ PRODUCT_DETAILS : "localised by locale"
+  PRODUCT ||--o{ ITEM : has
+  ITEM ||--o{ ITEM_DETAILS : "localised by locale"
+  SIGNON_USER ||--o| CUSTOMER : "USERID = USERNAME"
+  CUSTOMER }o--|| ACCOUNT : has
+  CUSTOMER }o--|| PROFILE : has
+  ACCOUNT }o--|| CONTACT_INFO : has
+  ACCOUNT }o--|| CREDIT_CARD : pays_with
+  CONTACT_INFO }o--|| ADDRESS : lives_at
+  PURCHASE_ORDER }o--|| CONTACT_INFO : ships_to
+  PURCHASE_ORDER }o--|| CREDIT_CARD : paid_by
+  PURCHASE_ORDER ||--|{ PO_LINE_ITEM : has
+  PURCHASE_ORDER ||--o| ORDER_MANAGER : "tracked by (PO_ID = ORDER_ID)"
+  SUPPLIER_ORDER }o--|| CONTACT_INFO : ships_to
+  SUPPLIER_ORDER ||--|{ SUPPLIER_LINE_ITEM : has
+  CATEGORY { varchar catid PK }
+  CATEGORY_DETAILS { varchar catid PK,FK
+    varchar locale PK
+    varchar name
+    varchar image
+    varchar descn }
+  PRODUCT { varchar productid PK
+    varchar catid FK }
+  PRODUCT_DETAILS { varchar productid PK,FK
+    varchar locale PK
+    varchar name
+    varchar image
+    varchar descn }
+  ITEM { varchar itemid PK
+    varchar productid FK }
+  ITEM_DETAILS { varchar itemid PK,FK
+    varchar locale PK
+    decimal listprice
+    decimal unitcost
+    varchar image
+    varchar descn
+    varchar attr1
+    varchar attr2
+    varchar attr3
+    varchar attr4
+    varchar attr5 }
+  SIGNON_USER { varchar username PK
+    varchar password "plain text" }
+  ADDRESS { varchar address_id PK
+    varchar street_name1
+    varchar street_name2
+    varchar city
+    varchar state
+    varchar zip_code
+    varchar country }
+  CONTACT_INFO { varchar contact_id PK
+    varchar family_name
+    varchar given_name
+    varchar telephone
+    varchar email
+    varchar address_id FK }
+  CREDIT_CARD { varchar card_id PK
+    varchar card_number "clear text"
+    varchar card_type
+    varchar expiry_date }
+  ACCOUNT { varchar account_id PK
+    varchar status
+    varchar contact_id FK
+    varchar card_id FK }
+  PROFILE { varchar profile_id PK
+    varchar preferred_language
+    varchar favorite_category
+    number my_list_preference
+    number banner_preference }
+  CUSTOMER { varchar user_id PK,FK
+    varchar account_id FK
+    varchar profile_id FK }
+  PURCHASE_ORDER { varchar po_id PK
+    varchar po_user_id
+    varchar po_email_id
+    number po_date "epoch ms"
+    varchar po_locale
+    number po_value
+    varchar contact_id FK
+    varchar card_id FK }
+  PO_LINE_ITEM { varchar po_id PK,FK
+    varchar line_number PK
+    varchar category_id
+    varchar product_id
+    varchar item_id
+    integer quantity
+    number unit_price
+    integer quantity_shipped }
+  ORDER_MANAGER { varchar order_id PK
+    varchar status "PENDING APPROVED DENIED COMPLETED" }
+  SUPPLIER_ORDER { varchar po_id PK
+    number po_date
+    varchar po_status "PENDING COMPLETED"
+    varchar contact_id FK }
+  SUPPLIER_LINE_ITEM { varchar po_id PK,FK
+    varchar line_number PK
+    varchar category_id
+    varchar product_id
+    varchar item_id
+    integer quantity
+    number unit_price
+    integer quantity_shipped }
+  INVENTORY { varchar item_id PK
+    integer quantity }
+  COUNTER { varchar name PK
+    integer counter }
