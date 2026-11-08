@@ -1,0 +1,340 @@
+recommendations:
+  - record_key: BATCH-REQ-0007
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: CHK-INT-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: CTR-ENT-0001
+    recommendation: accept
+    confidence: low
+    reason: >
+      Pass B infers this from the exported DDL alone; it duplicates WORKFLOW-ENT-0001 and PROCESS-ENT-0002, so merge or approve one.
+  - record_key: OPW-BR-0004
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: OPW-BR-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: OPW-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: OPW-REQ-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: OPW-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: OPW-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: OPW-REQ-0004
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: OPW-REQ-0006
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: OPW-RULE-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: OPW-WORKFLOW-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: OPW-WORKFLOW-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORD-REQ-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORD-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORD-WF-0008
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORD-WF-0009
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORD-WF-0011
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDA-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDAPP-REQ-0003
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDER-PROCESSING-WORKFLOW-BR-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDER-PROCESSING-WORKFLOW-BR-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDER-PROCESSING-WORKFLOW-BR-0003
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDER-PROCESSING-WORKFLOW-BUSINESS-RULE-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDER-PROCESSING-WORKFLOW-ENT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDER-PROCESSING-WORKFLOW-ENTITY-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDER-PROCESSING-WORKFLOW-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDER-PROCESSING-WORKFLOW-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDER-PROCESSING-WORKFLOW-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDER-PROCESSING-WORKFLOW-REQ-0004
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDER-PROCESSING-WORKFLOW-WF-0001
+    recommendation: accept
+    confidence: low
+    reason: >
+      Reachability is unresolved: no caller of the transition factory was found in the module. Confirm in other components whether it runs before approving; if dead, reject.
+  - record_key: ORDP-BR-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDP-INT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDP-REQ-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDP-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDP-RULE-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPROC-BR-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPROC-BR-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPROC-INT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPROC-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPROC-REQ-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPROC-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPROC-RULE-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPROC-RULE-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPROC-WKF-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPW-BR-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPW-BR-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPW-BR-0006
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPW-REQ-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPW-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDPW-REQ-0005
+    recommendation: accept
+    confidence: low
+    reason: >
+      Low confidence in pass B; the caller in the order action supports it, and ORDP-REQ-0001 states the same fact more strongly.
+  - record_key: ORDWF-BR-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDWF-WF-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDWF-WF-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: ORDWF-WF-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: PROCESS-ENT-0001
+    recommendation: edit
+    confidence: medium
+    reason: >
+      The schema CHECK omits SHIPPED_PART, which the code sets on partial invoicing. Confirm the status set in production; the conflict goes to Intent for the Business Owner.
+    edited_requirement: >
+      The system SHALL track each order's processing state in an order manager record with status restricted to PENDING, APPROVED, DENIED, SHIPPED_PART or COMPLETED, subject to the Business Owner confirming the production status set.
+  - record_key: PROCESS-ENT-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: PROCESS-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: SHOP-INT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: SHOP-INT-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: SHOP-REQ-0003
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: SUPF-INTG-0006
+    recommendation: accept
+    confidence: high
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: WKFL-INT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: WKFL-REQ-0001
+    recommendation: accept
+    confidence: low
+    reason: >
+      Absence of XSD validation is inferred from configuration only; confirm against the code that validates incoming documents.
+  - record_key: WORKFLOW-ENT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cited code and the other pass agree on this behaviour; only one pass states it, so check it against the code. Overlaps with sibling records from the other pass; the SME may merge them.
+  - record_key: WORKFLOW-RULE-0001
+    recommendation: edit
+    confidence: medium
+    reason: >
+      The schema CHECK lists four statuses but the code also uses SHIPPED_PART, so code and schema disagree. Confirm which holds in production and take the conflict to Intent for the Business Owner.
+    edited_requirement: >
+      The system SHALL keep for each order a process-manager state of exactly PENDING, APPROVED, DENIED, SHIPPED_PART or COMPLETED, subject to the Business Owner confirming the production status set, one row per order.
