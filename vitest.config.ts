@@ -39,7 +39,9 @@ export default defineConfig({
           environment: "jsdom",
           setupFiles: ["./src/test/setup.ts"],
           css: false,
-          exclude: ["node_modules", "dist", ".output", "e2e", "routes/**"],
+          // tests/acceptance/** is written before the product code and is red until Build
+          // makes it pass; it runs via `test:acceptance` (vitest.acceptance.config.ts).
+          exclude: ["node_modules", "dist", ".output", "e2e", "routes/**", "tests/acceptance/**"],
         },
       },
       {
