@@ -1,0 +1,429 @@
+records:
+  - record_key: BATCH-REQ-0001
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL take an online backup of the Pet Store database every day at or after 01:00, retain backups for 7 days, run it as a critical job, and rerun it up to 2 times on failure.
+    plain_text: >
+      Every night the store's database is backed up, and the last 7 days of backups are kept. If the backup fails it is retried twice.
+    technical_note: >
+      Control-M job PS_DB_BACKUP in folder PS_PETSTORE_DAILY runs ps_db_backup.sh; TIMEFROM=0100, WEEKDAYS=ALL, MAXRERUN=2, CRITICAL=1. The 7-day retention is stated only in DESCRIPTION; the script is not in this shard.
+    interface: false
+    confidence: medium
+    confidence_basis: >
+      One clear place (job definition); retention exists only in a description string and the script was not seen.
+    risk_class: operational
+    basis: >
+      Job definition and description.
+    traces:
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 15
+        line_end: 21
+        excerpt: |
+              <JOB JOBISN="1" APPLICATION="PETSTORE" SUB_APPLICATION="DATABASE" JOBNAME="PS_DB_BACKUP"
+                   DESCRIPTION="Online backup of PetStoreDB, keep 7 days"
+                   TASKTYPE="Job"
+                   MEMLIB="/opt/petstore/batch" MEMNAME="ps_db_backup.sh"
+                   RUN_AS="tomcat" NODEID="ps-app01" PRIORITY="AA" CRITICAL="1"
+                   TIMEFROM="0100" WEEKDAYS="ALL" DAYSCAL="PS_CAL" MAXRERUN="2"
+                   CREATED_BY="ps_ops" CREATION_DATE="20031014" CHANGE_DATE="20260915">
+    stack_metadata:
+      batch.trigger: Control-M PS_DB_BACKUP 01:00 daily
+      framework: Control-M
+  - record_key: BATCH-REQ-0002
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL email ps-ops@example.invalid with urgency U when the database backup ends not-OK, stating that the order extract is held.
+    plain_text: >
+      If the nightly backup fails, the operations team is urgently emailed and told the order extract will not run.
+    technical_note: >
+      ON STMT=* CODE=NOTOK DOMAIL on PS_DB_BACKUP.
+    interface: true
+    confidence: high
+    confidence_basis: >
+      Notification defined, and the extract's input condition independently makes the 'held' statement true.
+    risk_class: operational
+    basis: >
+      Backup failure notification.
+    traces:
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 23
+        line_end: 25
+        excerpt: |
+                <ON STMT="*" CODE="NOTOK">
+                  <DOMAIL URGENCY="U" DEST="ps-ops@example.invalid" SUBJECT="PS_DB_BACKUP failed" MESSAGE="Petstore DB backup failed, order extract is held" />
+                </ON>
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 35
+        line_end: 35
+        excerpt: |
+                <INCOND NAME="PS_DB_BACKUP-OK" ODATE="ODAT" AND_OR="A" />
+    stack_metadata:
+      batch.trigger: PS_DB_BACKUP NOTOK
+  - record_key: BATCH-REQ-0003
+    kind: workflow
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL run the order extract only after the database backup has completed OK for the same business date, and SHALL consume (remove) the backup-OK condition when the extract starts.
+    plain_text: >
+      The order export for Finance only starts once that night's backup has succeeded.
+    technical_note: >
+      PS_DB_BACKUP sets OUTCOND PS_DB_BACKUP-OK (+); PS_ORDER_EXTRACT INCOND requires it, then OUTCOND (-) deletes it and adds PS_ORDER_EXTRACT-OK (+).
+    interface: false
+    confidence: high
+    confidence_basis: >
+      Condition chain defined in both jobs' XML, and mail text says extract is held.
+    risk_class: operational
+    basis: >
+      Dependency chain via Control-M conditions.
+    traces:
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 22
+        line_end: 22
+        excerpt: |
+                <OUTCOND NAME="PS_DB_BACKUP-OK" ODATE="ODAT" SIGN="+" />
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 35
+        line_end: 37
+        excerpt: |
+                <INCOND NAME="PS_DB_BACKUP-OK" ODATE="ODAT" AND_OR="A" />
+                <OUTCOND NAME="PS_DB_BACKUP-OK" ODATE="ODAT" SIGN="-" />
+                <OUTCOND NAME="PS_ORDER_EXTRACT-OK" ODATE="ODAT" SIGN="+" />
+    stack_metadata:
+      batch.trigger: condition PS_DB_BACKUP-OK
+  - record_key: BATCH-REQ-0004
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL export the previous day's purchase orders to a file named orders_YYYYMMDD.csv for Finance, starting at or after 01:30 daily and rerunning at most once on failure.
+    plain_text: >
+      Each night, yesterday's orders are exported to a dated spreadsheet file for the Finance team.
+    technical_note: >
+      Job PS_ORDER_EXTRACT runs ps_order_extract.sh, TIMEFROM=0130, MAXRERUN=1. File name and 'yesterday' come from DESCRIPTION; script not seen.
+    interface: true
+    confidence: medium
+    confidence_basis: >
+      Job definition clear; file naming and date window only in description text.
+    risk_class: financial
+    basis: >
+      Job definition and description.
+    traces:
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 28
+        line_end: 34
+        excerpt: |
+              <JOB JOBISN="2" APPLICATION="PETSTORE" SUB_APPLICATION="ORDERS" JOBNAME="PS_ORDER_EXTRACT"
+                   DESCRIPTION="Export yesterday purchase orders to orders_YYYYMMDD.csv for Finance"
+                   TASKTYPE="Job"
+                   MEMLIB="/opt/petstore/batch" MEMNAME="ps_order_extract.sh"
+                   RUN_AS="tomcat" NODEID="ps-app01" PRIORITY="AB"
+                   TIMEFROM="0130" WEEKDAYS="ALL" MAXRERUN="1"
+                   CREATED_BY="ps_ops" CREATION_DATE="20031014" CHANGE_DATE="20260915">
+    stack_metadata:
+      batch.trigger: Control-M PS_ORDER_EXTRACT 01:30 daily
+  - record_key: BATCH-REQ-0005
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL email ps-finance@example.invalid with urgency R when the order extract ends not-OK, stating that the Finance extract was not produced.
+    plain_text: >
+      If the Finance order export fails, the Finance team is emailed.
+    technical_note: >
+      ON STMT=* CODE=NOTOK DOMAIL on PS_ORDER_EXTRACT.
+    interface: true
+    confidence: medium
+    confidence_basis: >
+      One clear place.
+    risk_class: operational
+    basis: >
+      Notification definition.
+    traces:
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 38
+        line_end: 40
+        excerpt: |
+                <ON STMT="*" CODE="NOTOK">
+                  <DOMAIL URGENCY="R" DEST="ps-finance@example.invalid" SUBJECT="PS_ORDER_EXTRACT failed" MESSAGE="Order extract for Finance not produced" />
+                </ON>
+    stack_metadata:
+      batch.trigger: PS_ORDER_EXTRACT NOTOK
+  - record_key: BATCH-REQ-0006
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL produce a daily report, at or after 01:45 and only after the order extract is OK, of orders stuck in PENDING or APPROVED status for more than 24 hours, and SHALL email ps-ops@example.invalid (urgency R) when the job ends with completion status 4, pointing to order_aging_YYYYMMDD.txt.
+    plain_text: >
+      Each night a report lists orders that have waited more than a day without moving on; if any are found, operations is emailed.
+    technical_note: >
+      Job PS_ORDER_AGING_REPORT, ps_order_aging_report.sh, INCOND PS_ORDER_EXTRACT-OK; COMPSTAT=4 triggers the mail. That COMPSTAT=4 means 'stuck orders found' is inferred from the mail text; script not seen.
+    interface: false
+    confidence: medium
+    confidence_basis: >
+      Job and mail text agree; the script defining the 24-hour test was not seen.
+    risk_class: operational
+    basis: >
+      Job description and ON handler.
+    traces:
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 43
+        line_end: 55
+        excerpt: |
+              <JOB JOBISN="3" APPLICATION="PETSTORE" SUB_APPLICATION="ORDERS" JOBNAME="PS_ORDER_AGING_REPORT"
+                   DESCRIPTION="Orders stuck PENDING or APPROVED for more than 24 hours"
+                   TASKTYPE="Job"
+                   MEMLIB="/opt/petstore/batch" MEMNAME="ps_order_aging_report.sh"
+                   RUN_AS="tomcat" NODEID="ps-app01" PRIORITY="AC"
+                   TIMEFROM="0145" WEEKDAYS="ALL"
+                   CREATED_BY="ps_ops" CREATION_DATE="20031014" CHANGE_DATE="20260915">
+                <INCOND NAME="PS_ORDER_EXTRACT-OK" ODATE="ODAT" AND_OR="A" />
+                <OUTCOND NAME="PS_ORDER_AGING_REPORT-OK" ODATE="ODAT" SIGN="+" />
+                <ON STMT="*" CODE="COMPSTAT=4">
+                  <DOMAIL URGENCY="R" DEST="ps-ops@example.invalid" SUBJECT="Petstore stuck orders found" MESSAGE="See /var/petstore/extract/order_aging_YYYYMMDD.txt" />
+                </ON>
+              </JOB>
+    stack_metadata:
+      batch.trigger: PS_ORDER_AGING_REPORT 01:45
+      framework: Control-M
+  - record_key: BATCH-REQ-0007
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL produce a daily report, at or after 01:50 and after the order extract is OK, of supplier items with stock below 500 units.
+    plain_text: >
+      Each night a report lists supplier items with fewer than 500 units in stock.
+    technical_note: >
+      Job PS_INVENTORY_REPORT (Command task) runs ps_inventory_report.sh. Threshold 500 appears only in DESCRIPTION. No failure notification or MAXRERUN.
+    interface: false
+    confidence: low
+    confidence_basis: >
+      Threshold is a bare literal in a description; no code or config corroboration seen.
+    risk_class: operational
+    basis: >
+      Description string only for the threshold.
+    traces:
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 57
+        line_end: 66
+        excerpt: |
+              <JOB JOBISN="4" APPLICATION="PETSTORE" SUB_APPLICATION="INVENTORY" JOBNAME="PS_INVENTORY_REPORT"
+                   DESCRIPTION="Supplier items with stock below 500 units"
+                   TASKTYPE="Command"
+                   CMDLINE="/opt/petstore/batch/ps_inventory_report.sh"
+                   RUN_AS="tomcat" NODEID="ps-app01" PRIORITY="AC"
+                   TIMEFROM="0150" WEEKDAYS="ALL"
+                   CREATED_BY="ps_ops" CREATION_DATE="20031014" CHANGE_DATE="20260915">
+                <INCOND NAME="PS_ORDER_EXTRACT-OK" ODATE="ODAT" AND_OR="A" />
+                <OUTCOND NAME="PS_INVENTORY_REPORT-OK" ODATE="ODAT" SIGN="+" />
+              </JOB>
+    stack_metadata:
+      batch.trigger: PS_INVENTORY_REPORT 01:50
+  - record_key: BATCH-REQ-0008
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL, on Sundays only, at or after 02:00 and after the order extract is OK, delete COMPLETED and DENIED orders older than 180 days.
+    plain_text: >
+      Every Sunday night, finished or denied orders older than 180 days are permanently deleted.
+    technical_note: >
+      Job PS_ORDER_PURGE, ps_order_purge.sh, WEEKDAYS=0, INCOND PS_ORDER_EXTRACT-OK. 180 days and statuses come from DESCRIPTION; script not seen.
+    interface: false
+    confidence: low
+    confidence_basis: >
+      Retention literal and statuses only in a description string; script not seen.
+    risk_class: regulated
+    basis: >
+      Description and weekday setting.
+    traces:
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 68
+        line_end: 77
+        excerpt: |
+              <JOB JOBISN="5" APPLICATION="PETSTORE" SUB_APPLICATION="ORDERS" JOBNAME="PS_ORDER_PURGE"
+                   DESCRIPTION="Delete COMPLETED and DENIED orders older than 180 days (Sundays)"
+                   TASKTYPE="Job"
+                   MEMLIB="/opt/petstore/batch" MEMNAME="ps_order_purge.sh"
+                   RUN_AS="tomcat" NODEID="ps-app01" PRIORITY="AD"
+                   TIMEFROM="0200" WEEKDAYS="0"
+                   CREATED_BY="ps_ops" CREATION_DATE="20031014" CHANGE_DATE="20260915">
+                <INCOND NAME="PS_ORDER_EXTRACT-OK" ODATE="ODAT" AND_OR="A" />
+                <OUTCOND NAME="PS_ORDER_PURGE-OK" ODATE="ODAT" SIGN="+" />
+              </JOB>
+    stack_metadata:
+      batch.trigger: PS_ORDER_PURGE Sunday 02:00
+      db.object: orders
+  - record_key: BATCH-REQ-0009
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL run a catalog integrity check daily at or after 06:00 as a critical job, loading the catalog first if it is empty.
+    plain_text: >
+      Every morning before opening, the product catalog is checked for integrity, and loaded if empty.
+    technical_note: >
+      Job PS_CATALOG_CHECK (Command) ps_catalog_check.sh, CRITICAL=1. The 'first load when empty' appears only in DESCRIPTION.
+    interface: false
+    confidence: medium
+    confidence_basis: >
+      Job definition clear; empty-load behaviour only described.
+    risk_class: operational
+    basis: >
+      Job definition.
+    traces:
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 79
+        line_end: 86
+        excerpt: |
+              <JOB JOBISN="6" APPLICATION="PETSTORE" SUB_APPLICATION="CATALOG" JOBNAME="PS_CATALOG_CHECK"
+                   DESCRIPTION="Catalog integrity check before the store opens; first load when empty"
+                   TASKTYPE="Command"
+                   CMDLINE="/opt/petstore/batch/ps_catalog_check.sh"
+                   RUN_AS="tomcat" NODEID="ps-app01" PRIORITY="AA" CRITICAL="1"
+                   TIMEFROM="0600" WEEKDAYS="ALL"
+                   CREATED_BY="ps_ops" CREATION_DATE="20031014" CHANGE_DATE="20260915">
+                <OUTCOND NAME="PS_CATALOG_CHECK-OK" ODATE="ODAT" SIGN="+" />
+    stack_metadata:
+      batch.trigger: PS_CATALOG_CHECK 06:00
+  - record_key: BATCH-REQ-0010
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL email ps-catalog@example.invalid with urgency U when the catalog check ends with completion status 4, pointing to catalog_check.log.
+    plain_text: >
+      If the catalog check finds a problem, the catalog team is urgently emailed.
+    technical_note: >
+      ON STMT=* CODE=COMPSTAT=4 DOMAIL on PS_CATALOG_CHECK.
+    interface: true
+    confidence: medium
+    confidence_basis: >
+      One clear place.
+    risk_class: operational
+    basis: >
+      Notification definition.
+    traces:
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 87
+        line_end: 89
+        excerpt: |
+                <ON STMT="*" CODE="COMPSTAT=4">
+                  <DOMAIL URGENCY="U" DEST="ps-catalog@example.invalid" SUBJECT="Petstore catalog integrity check failed" MESSAGE="See /var/petstore/log/catalog_check.log" />
+                </ON>
+    stack_metadata:
+      batch.trigger: PS_CATALOG_CHECK COMPSTAT=4
+  - record_key: BATCH-REQ-0011
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL check the storefront, order processing, supplier and admin web modules over HTTP every 10 minutes, all day, and email ps-ops@example.invalid with urgency R when the check ends not-OK.
+    plain_text: >
+      Every 10 minutes the store's web applications are checked, and operations is emailed if one is down.
+    technical_note: >
+      Folder PS_PETSTORE_CYCLIC, job PS_HEALTH_CHECK, CYCLIC=1, INTERVAL=00010M, TIMEFROM 0000 to TIMETO 2359, ps_health_check.sh; NOTOK DOMAIL.
+    interface: true
+    confidence: high
+    confidence_basis: >
+      Interval stated in config and described in header comment; mail on failure defined.
+    risk_class: operational
+    basis: >
+      Cyclic job definition and header comment.
+    traces:
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 96
+        line_end: 105
+        excerpt: |
+              <JOB JOBISN="1" APPLICATION="PETSTORE" SUB_APPLICATION="HEALTH" JOBNAME="PS_HEALTH_CHECK"
+                   DESCRIPTION="HTTP check of the storefront, OPC, supplier and admin web modules"
+                   TASKTYPE="Job"
+                   MEMLIB="/opt/petstore/batch" MEMNAME="ps_health_check.sh"
+                   RUN_AS="tomcat" NODEID="ps-app01" PRIORITY="AA"
+                   TIMEFROM="0000" WEEKDAYS="ALL" TIMETO="2359" CYCLIC="1" CYCLIC_TYPE="Interval" INTERVAL="00010M" IND_CYCLIC="START"
+                   CREATED_BY="ps_ops" CREATION_DATE="20031014" CHANGE_DATE="20260915">
+                <ON STMT="*" CODE="NOTOK">
+                  <DOMAIL URGENCY="R" DEST="ps-ops@example.invalid" SUBJECT="Petstore web module down" MESSAGE="See /var/petstore/log/batch.log" />
+                </ON>
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 7
+        line_end: 7
+        excerpt: |
+                 PS_PETSTORE_CYCLIC  web module health check every 10 minutes, all day
+    stack_metadata:
+      batch.trigger: Control-M cyclic 10 min
+      framework: Control-M
+  - record_key: BATCH-REQ-0012
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL, after the order extract is OK, start the aging report, inventory report and (Sundays) purge, each gated only on the extract-OK condition.
+    plain_text: >
+      After the export finishes, the stuck-order report, the stock report and the Sunday cleanup can start.
+    technical_note: >
+      INCOND PS_ORDER_EXTRACT-OK on jobs 3, 4, 5; the condition is not deleted by any job, so all three may run in parallel; PRIORITY AC/AC/AD only orders them under contention.
+    interface: false
+    confidence: high
+    confidence_basis: >
+      Condition used in three jobs plus the header comment describing the chain.
+    risk_class: operational
+    basis: >
+      Conditions and header comment.
+    traces:
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 5
+        line_end: 6
+        excerpt: |
+             PS_PETSTORE_DAILY   nightly chain: backup -> order extract -> aging report /
+                                 inventory report / purge (Sundays), plus the 06:00 catalog check
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 50
+        line_end: 50
+        excerpt: |
+                <INCOND NAME="PS_ORDER_EXTRACT-OK" ODATE="ODAT" AND_OR="A" />
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 64
+        line_end: 64
+        excerpt: |
+                <INCOND NAME="PS_ORDER_EXTRACT-OK" ODATE="ODAT" AND_OR="A" />
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 75
+        line_end: 75
+        excerpt: |
+                <INCOND NAME="PS_ORDER_EXTRACT-OK" ODATE="ODAT" AND_OR="A" />
+    stack_metadata:
+      batch.trigger: condition PS_ORDER_EXTRACT-OK
+findings:
+  - kind: ambiguity
+    path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+    description: >
+      Shell scripts in /opt/petstore/batch (batch/ in the source tree) hold the actual logic for retention, thresholds and report content; this shard covers only the schedule. Calendar PS_CAL (DAYSCAL on PS_DB_BACKUP) is not defined in the export, so which days the backup runs is unknown.
+suspected_defects:
+  - capability_key: batch-operations
+    record_keys: [BATCH-REQ-0003, BATCH-REQ-0012]
+    severity: medium
+    category: other
+    title: Dependent reports and purge have no failure alert and the chain relies on one-shot conditions
+    description: >
+      Only the backup and extract jobs alert on NOTOK; the inventory report and purge have no failure handler. A backup failure holds the extract, which silently holds all of the aging report, inventory report and purge, with only the backup alert as a signal.
+    traces:
+      - path: legacy-source/scheduler/control-m/PS_PETSTORE.xml
+        line_start: 57
+        line_end: 77
+        excerpt: |
+              <JOB JOBISN="4" APPLICATION="PETSTORE" SUB_APPLICATION="INVENTORY" JOBNAME="PS_INVENTORY_REPORT"
+                   DESCRIPTION="Supplier items with stock below 500 units"
+                   TASKTYPE="Command"
+                   CMDLINE="/opt/petstore/batch/ps_inventory_report.sh"
+                   RUN_AS="tomcat" NODEID="ps-app01" PRIORITY="AC"
+                   TIMEFROM="0150" WEEKDAYS="ALL"
+                   CREATED_BY="ps_ops" CREATION_DATE="20031014" CHANGE_DATE="20260915">
+                <INCOND NAME="PS_ORDER_EXTRACT-OK" ODATE="ODAT" AND_OR="A" />
+                <OUTCOND NAME="PS_INVENTORY_REPORT-OK" ODATE="ODAT" SIGN="+" />
+              </JOB>
+          
+              <JOB JOBISN="5" APPLICATION="PETSTORE" SUB_APPLICATION="ORDERS" JOBNAME="PS_ORDER_PURGE"
+                   DESCRIPTION="Delete COMPLETED and DENIED orders older than 180 days (Sundays)"
+                   TASKTYPE="Job"
+                   MEMLIB="/opt/petstore/batch" MEMNAME="ps_order_purge.sh"
+                   RUN_AS="tomcat" NODEID="ps-app01" PRIORITY="AD"
+                   TIMEFROM="0200" WEEKDAYS="0"
+                   CREATED_BY="ps_ops" CREATION_DATE="20031014" CHANGE_DATE="20260915">
+                <INCOND NAME="PS_ORDER_EXTRACT-OK" ODATE="ODAT" AND_OR="A" />
+                <OUTCOND NAME="PS_ORDER_PURGE-OK" ODATE="ODAT" SIGN="+" />
+              </JOB>
