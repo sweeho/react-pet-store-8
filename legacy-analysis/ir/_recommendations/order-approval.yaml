@@ -1,0 +1,136 @@
+recommendations:
+  - record_key: ORDAPP-RULE-0001
+    recommendation: accept
+    confidence: low
+    reason: >
+      The auto-approval limits are bare literals (also in petstore.properties); sources disagree on whether the boundary is inclusive. Recommend confirming with the Business Owner via Intent.
+  - record_key: ORDAPP-BR-0001
+    recommendation: accept
+    confidence: low
+    reason: >
+      The auto-approval limits are bare literals (also in petstore.properties); sources disagree on whether the boundary is inclusive. Recommend confirming with the Business Owner via Intent.
+  - record_key: APPR-REQ-0001
+    recommendation: accept
+    confidence: low
+    reason: >
+      The auto-approval limits are bare literals (also in petstore.properties); sources disagree on whether the boundary is inclusive. Recommend confirming with the Business Owner via Intent.
+  - record_key: ORDA-BR-0001
+    recommendation: accept
+    confidence: low
+    reason: >
+      The auto-approval limits are bare literals (also in petstore.properties); sources disagree on whether the boundary is inclusive. Recommend confirming with the Business Owner via Intent.
+  - record_key: ORDAPP-RULE-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDAPP-BR-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDP-INT-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDAPP-BUSINESS-RULE-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDAPP-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDAPP-WORKFLOW-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDAPP-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDA-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDAPP-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDAPP-WF-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDA-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDAPP-REQ-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDAPP-REQ-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDAPP-REQ-0006
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDAPP-INT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDA-REQ-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDA-WF-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: ORDAPP-SCR-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: APPROVAL-ENT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: LOCAL-BR-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: CUSTNOT-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: CUSN-INT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
+  - record_key: BATC-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Pass B and the code agree; accept as extracted.
