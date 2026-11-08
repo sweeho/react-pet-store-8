@@ -1,0 +1,111 @@
+recommendations:
+  - record_key: BATCH-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-REQ-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-REQ-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-REQ-0006
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-REQ-0007
+    recommendation: accept
+    confidence: low
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-REQ-0008
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-REQ-0009
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-REQ-0010
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-REQ-0011
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-REQ-0012
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-RULE-0004
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-RULE-0005
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-RULE-0007
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-RULE-0010
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-WF-0008
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATC-BR-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATC-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATC-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: BATCH-OPERATIONS-REQ-0001
+    recommendation: accept
+    confidence: low
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
+  - record_key: CATB-REQ-0010
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes and sources agree on the behaviour; thresholds and addresses come from legacy configuration and the SME should confirm them. Key collisions across pass files mean the SME should check the merged record text.
