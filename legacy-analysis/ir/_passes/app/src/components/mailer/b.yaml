@@ -1,0 +1,144 @@
+records:
+  - record_key: CN-WF-0001
+    kind: workflow
+    capability_key: customer-notifications
+    requirement: The system SHALL consume each message from the mailer queue as a text message holding an XML mail document (address, subject, content) and send one email per message.
+    confidence: high
+    confidence_basis: Message handler code, its deployment descriptor (queue destination, container transaction) and the mail DTD all agree.
+    risk_class: operational
+    basis: The queue listener parses the XML mail document and hands address, subject and content to the sender. The caller is assumed to have formatted the content already.
+    plain_text: Whenever a notification request arrives on the mail queue, the system sends one email containing the address, subject and body supplied in that request.
+    technical_note: MailerMDB.onMessage casts to TextMessage, Mail.fromXML (validating against Mail.dtd), then MailHelper.createAndSendMail. Container-managed transaction, trans-attribute Required.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/ejb/MailerMDB.java
+        line_start: 74
+        line_end: 82
+        excerpt: |
+          public void onMessage(Message recvMsg) {
+          sendMail(recMail.getAddress(), recMail.getSubject(), recMail.getContent(),  Locale.getDefault());
+      - path: legacy-source/app/src/components/mailer/src/ejb-jar.xml
+        line_start: 71
+        line_end: 80
+        excerpt: |
+          <trans-attribute>Required</trans-attribute>
+    stack_metadata:
+      framework: EJB 2.0 MDB
+      ejb.bean: MailerMDB
+      ejb.transaction: Required
+      jms.queue: javax.jms.Queue (destination bound at deploy time)
+  - record_key: CN-REQ-0002
+    kind: requirement
+    capability_key: customer-notifications
+    requirement: The system SHALL treat a mail request as invalid when it is not a well-formed mail document with Address, Subject and Content elements in that order.
+    confidence: medium
+    confidence_basis: One clear place (DTD plus validating parse); no test seen.
+    risk_class: operational
+    basis: DTD declares Mail as sequence (Address, Subject, Content); parsing is validating by default.
+    plain_text: A notification request must contain a recipient address, a subject and a body, in that order, or it is rejected.
+    technical_note: Mail.dtd; Mail.fromXML(String) uses VALIDATING.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/rsrc/schemas/Mail.dtd
+        line_start: 38
+        line_end: 41
+        excerpt: |
+          <!ELEMENT Mail (Address, Subject, Content)>
+          <!ELEMENT Address (#PCDATA)>
+          <!ELEMENT Subject (#PCDATA)>
+          <!ELEMENT Content (#PCDATA)>
+    stack_metadata:
+      framework: XML DTD
+  - record_key: CN-REQ-0003
+    kind: requirement
+    capability_key: customer-notifications
+    requirement: The system SHALL send each email as HTML content, with the sender defaulting to the mail session's configured sender, the supplied address(es) as TO recipients, the supplied subject, the current date as sent date, and an X-Mailer header of "JavaMailer".
+    confidence: medium
+    confidence_basis: One clear place; literal values read directly.
+    risk_class: presentational
+    basis: MailHelper builds the MIME message with fixed content type and header.
+    plain_text: Notification emails are sent as formatted (web-style) messages to the given recipient, dated when sent.
+    technical_note: MailHelper.createAndSendMail; session looked up from JNDI name for mail session; InternetAddress.parse non-strict so a comma-separated list yields several recipients.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/ejb/MailHelper.java
+        line_start: 72
+        line_end: 85
+        excerpt: |
+          msg.setFrom();
+          msg.setRecipients(Message.RecipientType.TO,
+                   InternetAddress.parse(emailAddress, false));
+          msg.setSubject(subject);
+          String contentType = "text/html";
+          msg.setHeader("X-Mailer", "JavaMailer");
+          msg.setSentDate(new Date());
+          Transport.send(msg);
+    stack_metadata:
+      framework: JavaMail
+      jndi: mail/MailSession
+  - record_key: CN-BR-0004
+    kind: business-rule
+    capability_key: customer-notifications
+    requirement: GIVEN the mail cannot be sent (for example no mail server is configured) WHEN a request is processed THEN the system SHALL discard the request without retry and without raising an error to the queue.
+    confidence: high
+    confidence_basis: Sender wraps every failure into one exception and the listener's catch block explicitly ignores it, with a comment giving the reason.
+    risk_class: operational
+    basis: Comment states the failure is ignored because the user probably forgot to set up a mail server.
+    plain_text: If an email cannot be sent, the request is silently dropped; it is not retried and nobody is told.
+    technical_note: MailHelper catches Exception, logs to stderr, throws MailerAppException; MailerMDB catches and ignores it, so the transaction commits and the message is consumed.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/ejb/MailerMDB.java
+        line_start: 83
+        line_end: 85
+        excerpt: |
+          } catch (MailerAppException me) {
+            //throw new EJBException("MailerMDB.onMessage" + me);
+            //ignore since user probably forgot to set up mail server
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/ejb/MailHelper.java
+        line_start: 86
+        line_end: 88
+        excerpt: |
+          } catch (Exception e) {
+              System.err.print("createAndSendMail exception : " + e);
+              throw new MailerAppException("Failure while sending mail");
+    stack_metadata:
+      framework: EJB 2.0 MDB
+  - record_key: CN-BR-0005
+    kind: business-rule
+    capability_key: customer-notifications
+    requirement: GIVEN a queue message is not a text message, or its XML is invalid or cannot be read WHEN processed THEN the system SHALL raise a system error so the message is not treated as handled.
+    confidence: medium
+    confidence_basis: Explicit throws in one place; redelivery behaviour depends on container, not visible.
+    risk_class: operational
+    basis: XML and JMS exceptions are rethrown as EJBException, unlike send failures.
+    plain_text: A malformed notification request is treated as a fault, whereas a failure to deliver a well-formed one is ignored.
+    technical_note: MailerMDB.onMessage rethrows XMLDocumentException and JMSException as EJBException. A non-TextMessage would raise ClassCastException, not caught.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/ejb/MailerMDB.java
+        line_start: 86
+        line_end: 90
+        excerpt: |
+          } catch (XMLDocumentException xde) {
+            throw new EJBException("MailerMDB.onMessage" + xde);
+          } catch(JMSException je) {
+            throw new EJBException("MailerMDB.onMessage" + je);
+    stack_metadata:
+      framework: EJB 2.0 MDB
+suspected_defects:
+  - capability_key: customer-notifications
+    record_keys: [CN-BR-0004]
+    severity: medium
+    category: error-swallowed
+    title: Failed customer emails are silently discarded
+    description: >
+      A send failure is logged to stderr only and swallowed; the message is consumed, so confirmation/approval mail can be lost with no retry or alert.
+    traces:
+      - path: legacy-source/app/src/components/mailer/src/com/sun/j2ee/blueprints/mailer/ejb/MailerMDB.java
+        line_start: 83
+        line_end: 85
+findings:
+  - kind: ambiguity
+    path: legacy-source/app/src/components/mailer/src/ejb-jar.xml
+    description: Queue destination name is not in the descriptor (only destination-type); which queue feeds the mailer and which components publish to it must be established elsewhere. No documents under legacy-analysis/sources exist for this module.
