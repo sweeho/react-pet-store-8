@@ -1,0 +1,349 @@
+records:
+  - record_key: SUPPLIER-FULFILMENT-ENTITY-0001
+    kind: entity
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL persist a purchase order with an order id, user id, e-mail id, order date,
+      locale, total value, one contact (billing/shipping) record, one credit card record and a
+      collection of line items.
+    confidence: high
+    confidence_basis: >
+      Stated in the CMP field accessors and ejbCreate/ejbPostCreate, and in the ejb-jar CMP
+      declaration and the DTD; several independent places.
+    risk_class: operational
+    basis: >
+      Entity bean declares the persistent fields and relationships; ejbCreate copies header fields
+      and ejbPostCreate creates the contact, card and line-item children.
+    plain_text: >
+      Each purchase order sent to a supplier records who ordered, when, in which locale, the total
+      value, the contact details, the payment card and the list of ordered items.
+    technical_note: >
+      PurchaseOrderEJB is a CMP 2.x entity (abstract schema PurchaseOrder) with CMR to ContactInfo,
+      CreditCard and LineItem. ejbCreate sets poId/userId/emailId/date/locale/value; ejbPostCreate
+      creates the children through the ServiceLocator.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/purchaseorder/src/com/sun/j2ee/blueprints/purchaseorder/ejb/PurchaseOrderEJB.java
+        line_start: 197
+        line_end: 205
+        excerpt: |
+          public String ejbCreate(PurchaseOrder purchaseOrder) throws CreateException {
+                setPoId(purchaseOrder.getOrderId());
+                setPoUserId(purchaseOrder.getUserId());
+                setPoEmailId(purchaseOrder.getEmailId());
+                setPoDate(purchaseOrder.getOrderDate().getTime());
+                setPoLocale(purchaseOrder.getLocale().toString());
+                setPoValue(purchaseOrder.getTotalPrice());
+                return null;
+          }
+      - path: legacy-source/app/src/components/purchaseorder/src/ejb-jar.xml
+        line_start: 58
+        line_end: 59
+        excerpt: |
+          <cmp-version>2.x</cmp-version>  
+                <abstract-schema-name>PurchaseOrder</abstract-schema-name>
+    stack_metadata:
+      framework: EJB 2.x CMP
+      ejb.bean: PurchaseOrderEJB
+
+  - record_key: SUPPLIER-FULFILMENT-BUSINESS-RULE-0002
+    kind: business-rule
+    capability_key: supplier-fulfilment
+    requirement: >
+      WHEN a purchase order is created, the system SHALL create a contact record from the shipping
+      info, a credit card record from the order's card, and one line item per order line with
+      shipped quantity initialised to 0, all within the creation of the order; IF any lookup of the
+      collaborating services fails, the creation SHALL fail.
+    confidence: medium
+    confidence_basis: >
+      One clear place (ejbPostCreate); no test or config corroboration.
+    risk_class: operational
+    basis: >
+      ejbPostCreate creates children and passes 0 as the second argument to the line item create.
+      A ServiceLocatorException is converted to CreateException.
+    plain_text: >
+      When a supplier order is placed, its contact details, card and each ordered item are stored
+      with it, and no items are marked as shipped yet. If any of these cannot be stored, the order
+      is not created.
+    technical_note: >
+      The second argument 0 to LineItemLocalHome.create is presumed to be the initial shipped
+      quantity (not verifiable in this module). Only shipping info is used as the contact; billing
+      info of the incoming order is not persisted separately.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/purchaseorder/src/com/sun/j2ee/blueprints/purchaseorder/ejb/PurchaseOrderEJB.java
+        line_start: 217
+        line_end: 237
+        excerpt: |
+          ContactInfoLocal cinfoloc = (ContactInfoLocal)
+                      cinforef.create(purchaseOrder.getShippingInfo());
+                  setContactInfo(cinfoloc);
+                  CreditCardLocalHome cardref = (CreditCardLocalHome)
+                      serviceLocator.getLocalHome(JNDINames.CARD_EJB);
+                  CreditCardLocal cardloc = (CreditCardLocal)
+                      cardref.create(purchaseOrder.getCreditCard());
+                  setCreditCard(cardloc);
+                  LineItemLocalHome lineItemref = (LineItemLocalHome)
+                      serviceLocator.getLocalHome(JNDINames.LI_EJB);
+                  Collection litems = purchaseOrder.getLineItems();
+                  Iterator it = litems.iterator();
+                  while((it != null) && (it.hasNext())) {
+                      LineItem li = (LineItem) it.next();
+                      LineItemLocal lineItemloc = (LineItemLocal)
+                          lineItemref.create(li, 0);
+                      addLineItem(lineItemloc);
+                  }
+              } catch(ServiceLocatorException ne) {
+                  throw new CreateException("ServiceLocator Ex while persisting PO CMR :" + ne.getMessage());
+    stack_metadata:
+      framework: EJB 2.x CMP
+      ejb.bean: PurchaseOrderEJB
+      ejb.transaction: Required
+
+  - record_key: SUPPLIER-FULFILMENT-BUSINESS-RULE-0003
+    kind: business-rule
+    capability_key: supplier-fulfilment
+    requirement: >
+      WHEN supplier invoice information is processed for a purchase order, the system SHALL add
+      the shipped quantity reported for each item id to that line item's shipped quantity, and
+      SHALL report the order as completely fulfilled only if every line item's ordered quantity
+      equals its shipped quantity.
+    confidence: medium
+    confidence_basis: >
+      One clear place (PurchaseOrderHelper.processInvoice); callers are outside this module and
+      were not examined.
+    risk_class: financial
+    basis: >
+      processInvoice accumulates shipped quantity per matching item id, then compares quantity to
+      quantityShipped for all lines and returns false on the first mismatch.
+    plain_text: >
+      When a supplier reports a shipment, the shipped amounts are added to the order's items. The
+      order counts as fully delivered only when every item has been shipped in exactly the ordered
+      quantity.
+    technical_note: >
+      Matching is by item id; an item id in the invoice map that matches no line is ignored
+      silently. Equality (!=) is used, so over-shipment leaves the order never complete.
+      Lines with the same item id would each receive the full shipped amount.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/purchaseorder/src/com/sun/j2ee/blueprints/purchaseorder/ejb/PurchaseOrderHelper.java
+        line_start: 83
+        line_end: 102
+        excerpt: |
+          Collection liColl = po.getLineItems();
+              Iterator liIt = liColl.iterator();
+              while((liIt != null) && (liIt.hasNext())) {
+                LineItemLocal li = (LineItemLocal) liIt.next();
+                if(lineItemIds.containsKey(li.getItemId())) {
+                            Integer shipped = (Integer) lineItemIds.get(li.getItemId());
+                    li.setQuantityShipped(li.getQuantityShipped() + shipped.intValue());
+                    }
+              }//end while
+
+              // now loop through all LIs and see if all are shipped completely
+              liColl = po.getLineItems();
+              liIt = liColl.iterator();
+              while((liIt != null) && (liIt.hasNext())) {
+                LineItemLocal li = (LineItemLocal) liIt.next();
+                if(li.getQuantity() != li.getQuantityShipped()) {
+                    return false;
+                    }
+              }//end while
+              return true;
+    stack_metadata:
+      framework: EJB 2.x
+      ejb.bean: PurchaseOrderHelper
+
+  - record_key: SUPPLIER-FULFILMENT-REQUIREMENT-0004
+    kind: requirement
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL allow purchase orders to be found by order id and by an order-date range
+      (inclusive, both bounds given as epoch milliseconds).
+    confidence: high
+    confidence_basis: >
+      Finder declared in the home interface and in the deployment descriptor query; BETWEEN
+      semantics are inclusive by definition.
+    risk_class: operational
+    basis: Home interface declares findByPrimaryKey; ejb-jar declares findPOBetweenDates query.
+    plain_text: >
+      A purchase order can be looked up by its number, and all purchase orders placed between two
+      dates can be listed.
+    technical_note: >
+      EJB-QL "SELECT OBJECT(a) From PurchaseOrder a WHERE a.poDate BETWEEN ?1 AND ?2" with long
+      params. Whether findPOBetweenDates is declared on the local home interface was not seen
+      (only findByPrimaryKey grep matched); callers not examined.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/purchaseorder/src/ejb-jar.xml
+        line_start: 120
+        line_end: 126
+        excerpt: |
+          <method-name>findPOBetweenDates</method-name>
+                  <method-params>
+                    <method-param>long</method-param>
+                    <method-param>long</method-param>
+                  </method-params>
+                </query-method>
+                <ejb-ql>SELECT OBJECT(a) From PurchaseOrder a WHERE a.poDate BETWEEN ?1 AND ?2</ejb-ql>
+      - path: legacy-source/app/src/components/purchaseorder/src/com/sun/j2ee/blueprints/purchaseorder/ejb/PurchaseOrderLocalHome.java
+        line_start: 55
+        line_end: 55
+        excerpt: |
+          public PurchaseOrderLocal findByPrimaryKey(String poId) throws FinderException;
+    stack_metadata:
+      framework: EJB 2.x CMP
+      db.object: PurchaseOrder
+
+  - record_key: SUPPLIER-FULFILMENT-REQUIREMENT-0005
+    kind: integration
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL exchange a purchase order as an XML document validated against the
+      PurchaseOrder 1.1 DTD, containing locale, order id, user id, e-mail id, order date
+      (yyyy-MM-dd), shipping info, billing info, total price, credit card and line items.
+    confidence: high
+    confidence_basis: >
+      Serialisation code (toDOM/fromDOM) and the DTD agree; VALIDATING is true.
+    risk_class: operational
+    basis: toDOM writes and fromDOM reads the listed elements in a fixed order; DTD declares them.
+    plain_text: >
+      Purchase orders are sent to and received from other systems as a standard XML document with
+      a fixed set of fields.
+    technical_note: >
+      fromDOM requires child elements in the fixed sibling order. Default locale is en_US (field
+      default and DTD attribute default). Price is serialised as a float.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/purchaseorder/src/com/sun/j2ee/blueprints/purchaseorder/ejb/PurchaseOrder.java
+        line_start: 256
+        line_end: 275
+        excerpt: |
+          public Node toDOM(Document document) {
+              Element root = document.createElement(XML_PURCHASEORDER);
+              root.setAttribute(XML_LOCALE, locale.toString());
+              XMLDocumentUtils.appendChild(document, root, XML_ORDERID, orderId);
+              XMLDocumentUtils.appendChild(document, root, XML_USERID, userId);
+              XMLDocumentUtils.appendChild(document, root, XML_EMAILID, emailId);
+              XMLDocumentUtils.appendChild(document, root, XML_ORDERDATE, dateFormat.format(orderDate));
+              Element element = (Element) document.createElement(XML_SHIPPINGINFO);
+              element.appendChild(shippingInfo.toDOM(document));
+              root.appendChild(element);
+              element = (Element) document.createElement(XML_BILLINGINFO);
+              element.appendChild(billingInfo.toDOM(document));
+              root.appendChild(element);
+              XMLDocumentUtils.appendChild(document, root, XML_TOTALPRICE, totalPrice);
+              root.appendChild(creditCard.toDOM(document));
+              for (Iterator i = lineItems.iterator(); i.hasNext();) {
+      - path: legacy-source/app/src/components/purchaseorder/src/com/sun/j2ee/blueprints/purchaseorder/rsrc/schemas/PurchaseOrder.dtd
+        line_start: 1
+        line_end: 3
+        excerpt: |
+          <!ATTLIST PurchaseOrder
+          	locale CDATA "en_US"
+          >
+    stack_metadata:
+      framework: JAXP DOM
+      db.object: PurchaseOrder.dtd
+
+  - record_key: SUPPLIER-FULFILMENT-BUSINESS-RULE-0006
+    kind: business-rule
+    capability_key: supplier-fulfilment
+    requirement: >
+      GIVEN an incoming purchase order document whose order date is missing or unparseable, WHEN
+      it is read, the system SHALL use the current date as the order date and continue.
+    confidence: medium
+    confidence_basis: >
+      One clear place; behaviour explicit in catch block with log message.
+    risk_class: operational
+    basis: fromDOM catches any exception parsing OrderDate and substitutes new Date().
+    plain_text: >
+      If an incoming purchase order has no valid date, today's date is used instead.
+    technical_note: >
+      Any exception, including a structural one, is swallowed and logged to stderr only. Because
+      the sibling cursor is advanced inside the try, a missing OrderDate element may also affect
+      reading of later elements.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/purchaseorder/src/com/sun/j2ee/blueprints/purchaseorder/ejb/PurchaseOrder.java
+        line_start: 297
+        line_end: 303
+        excerpt: |
+          try {
+                  child = XMLDocumentUtils.getNextSibling(child, XML_ORDERDATE, false);
+                  purchaseOrder.setOrderDate(purchaseOrder.dateFormat.parse(XMLDocumentUtils.getContentAsString(child, false)));
+                } catch (Exception exception) {
+                  purchaseOrder.setOrderDate(new Date());
+                  System.err.println(XML_ORDERDATE + ": " + exception.getMessage() + " reset to current date.");
+                }
+    stack_metadata:
+      framework: JAXP DOM
+
+  - record_key: SUPPLIER-FULFILMENT-BUSINESS-RULE-0007
+    kind: business-rule
+    capability_key: supplier-fulfilment
+    requirement: >
+      WHEN a stored purchase order is read back, the system SHALL present the stored contact
+      record as both billing and shipping info.
+    confidence: medium
+    confidence_basis: >
+      One place; the code carries an "XXX" marker showing the author considered it a shortcut.
+    risk_class: operational
+    basis: getData sets shipping info to the same object as billing info.
+    plain_text: >
+      A stored purchase order keeps only one contact address, so billing and shipping addresses
+      read back as the same.
+    technical_note: >
+      Only the shipping info is persisted at creation (ejbPostCreate); billing info of the input
+      is dropped.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/purchaseorder/src/com/sun/j2ee/blueprints/purchaseorder/ejb/PurchaseOrderEJB.java
+        line_start: 267
+        line_end: 268
+        excerpt: |
+          purchaseOrder.setBillingInfo(getContactInfo().getData());
+              purchaseOrder.setShippingInfo(purchaseOrder.getBillingInfo()); // XXX
+    stack_metadata:
+      framework: EJB 2.x CMP
+      ejb.bean: PurchaseOrderEJB
+
+findings: []
+
+suspected_defects:
+  - capability_key: supplier-fulfilment
+    record_keys: [SUPPLIER-FULFILMENT-BUSINESS-RULE-0007, SUPPLIER-FULFILMENT-BUSINESS-RULE-0002]
+    severity: medium
+    category: data-corruption
+    title: Billing address is lost; shipping address is returned as billing
+    description: >
+      The order is persisted with only the shipping contact; on read, that contact is returned as
+      both billing and shipping. A distinct billing address supplied at creation is discarded.
+    traces:
+      - path: legacy-source/app/src/components/purchaseorder/src/com/sun/j2ee/blueprints/purchaseorder/ejb/PurchaseOrderEJB.java
+        line_start: 267
+        line_end: 268
+  - capability_key: supplier-fulfilment
+    record_keys: [SUPPLIER-FULFILMENT-BUSINESS-RULE-0006]
+    severity: low
+    category: error-swallowed
+    title: Bad order date silently replaced by current date
+    description: >
+      Any exception while reading OrderDate is caught and replaced with today's date, logged only
+      to stderr.
+    traces:
+      - path: legacy-source/app/src/components/purchaseorder/src/com/sun/j2ee/blueprints/purchaseorder/ejb/PurchaseOrder.java
+        line_start: 297
+        line_end: 303
+  - capability_key: supplier-fulfilment
+    record_keys: [SUPPLIER-FULFILMENT-BUSINESS-RULE-0003]
+    severity: medium
+    category: other
+    title: Over-shipment prevents order completion
+    description: >
+      Completion test uses inequality between ordered and shipped quantity, so a shipped quantity
+      above the ordered quantity leaves the order never complete.
+    traces:
+      - path: legacy-source/app/src/components/purchaseorder/src/com/sun/j2ee/blueprints/purchaseorder/ejb/PurchaseOrderHelper.java
+        line_start: 98
+        line_end: 100

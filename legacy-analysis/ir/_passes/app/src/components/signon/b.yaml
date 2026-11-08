@@ -1,0 +1,251 @@
+records:
+  - record_key: SIGN-REQ-0001
+    kind: requirement
+    capability_key: sign-on-security
+    requirement: >
+      The system SHALL intercept every request and, when the user is not signed on and the requested
+      resource matches a configured protected resource, present the sign-on page instead and remember the originally requested resource.
+    plain_text: >
+      Protected pages cannot be opened until the visitor has signed in; the visitor sees the sign-in page and is remembered as wanting the original page.
+    technical_note: >
+      SignOnFilter.doFilter compares the path after the context root to each protected url-pattern by exact string equality, stores it in the session as the original URL and forwards to the login page. Non-matching URLs pass through.
+    interface: false
+    confidence: high
+    confidence_basis: >
+      Enforced in the filter code and driven by declared security-constraint config read by SignOnDAO (two places); the config file itself (signon-config.xml) was not seen in this module.
+    risk_class: regulated
+    basis: Filter checks session flag, loops over protected resources, forwards to sign-on page.
+    traces:
+      - path: legacy-source/app/src/components/signon/src/com/sun/j2ee/blueprints/signon/web/SignOnFilter.java
+        line_start: 124
+        line_end: 155
+        excerpt: |
+          if (signedOn) {
+                  chain.doFilter(request,response);
+                  return;
+          }
+          if (urlPattern.equals(targetURL)) {
+              hreq.getSession().setAttribute(ORIGINAL_URL,  targetURL);
+    stack_metadata:
+      framework: servlet-filter
+      session.scope: HttpSession
+  - record_key: SIGN-RULE-0002
+    kind: business-rule
+    capability_key: sign-on-security
+    requirement: >
+      GIVEN a sign-on submission to the sign-on check address WHEN the supplied user name and password match a registered user THEN the system SHALL mark the session as signed on, record the user name in the session and redirect to the originally requested resource; OTHERWISE it SHALL redirect to the configured sign-on error page.
+    plain_text: >
+      A correct user name and password signs the visitor in and returns them to the page they wanted; a wrong one sends them to an error page.
+    technical_note: >
+      validateSignOn calls SignOnEJB.authenticate; on success sets session attributes j_signon_username and j_signon=true and redirects to j_signon_original_url. Failed login has no retry limit or lockout in this module.
+    interface: false
+    confidence: high
+    confidence_basis: Filter and session bean both implement the path, clear and consistent.
+    risk_class: regulated
+    basis: Authentication outcome handling.
+    traces:
+      - path: legacy-source/app/src/components/signon/src/com/sun/j2ee/blueprints/signon/web/SignOnFilter.java
+        line_start: 188
+        line_end: 209
+        excerpt: |
+          boolean authenticated = signOn.authenticate(userName, password);
+          if (authenticated) {
+              hreq.getSession().setAttribute(USER_NAME, userName);
+              hreq.getSession().setAttribute(SIGNED_ON_USER, new Boolean(true));
+              hres.sendRedirect(targetURL);
+          } else {
+              hres.sendRedirect(signOnErrorPage);
+    stack_metadata:
+      framework: servlet-filter
+      ejb.bean: SignOnEJB
+  - record_key: SIGN-RULE-0003
+    kind: business-rule
+    capability_key: sign-on-security
+    requirement: >
+      The system SHALL treat a user as authenticated only when a user with the supplied name exists and the supplied password is exactly equal to the stored password; an unknown user SHALL be treated as failed authentication.
+    plain_text: >
+      A sign-in succeeds only if the user exists and the password is exactly the one on file.
+    technical_note: >
+      SignOnEJB.authenticate does findByPrimaryKey(userName) and UserEJB.matchPassword uses String.equals on the stored value; FinderException returns false. Passwords are compared as stored plain text.
+    interface: false
+    confidence: high
+    confidence_basis: Two cooperating classes implement it; persistence mapping in ejb-jar.xml confirms userName is primary key.
+    risk_class: regulated
+    basis: Credential check.
+    traces:
+      - path: legacy-source/app/src/components/signon/src/com/sun/j2ee/blueprints/signon/ejb/SignOnEJB.java
+        line_start: 71
+        line_end: 78
+        excerpt: |
+          UserLocal user = ulh.findByPrimaryKey(userName);
+          return user.matchPassword(password);
+        } catch (FinderException fe) {
+          return false;
+      - path: legacy-source/app/src/components/signon/src/com/sun/j2ee/blueprints/signon/user/ejb/UserEJB.java
+        line_start: 88
+        line_end: 90
+        excerpt: |
+          public boolean matchPassword(String password) {
+              return password.equals(getPassword());
+    stack_metadata:
+      ejb.bean: SignOnEJB, UserEJB
+      ejb.transaction: Container
+  - record_key: SIGN-RULE-0004
+    kind: business-rule
+    capability_key: sign-on-security
+    requirement: >
+      WHEN the sign-on form includes the remember-username option the system SHALL store the user name in a cookie named bp_signon valid for 2678400 seconds (31 days); WHEN the option is absent the system SHALL expire any existing bp_signon cookie.
+    plain_text: >
+      If the visitor ticks "remember my user name" it is remembered for about a month; if not ticked, any remembered name is cleared.
+    technical_note: >
+      Cookie set in validateSignOn before authentication is checked, so it is set/cleared even when the login fails. 2678400 is a bare literal (31 days). Cookie holds the user name only.
+    interface: false
+    confidence: medium
+    confidence_basis: One clear place; no comment beyond "one month", no config or test.
+    risk_class: operational
+    basis: Cookie handling in sign-on check.
+    traces:
+      - path: legacy-source/app/src/components/signon/src/com/sun/j2ee/blueprints/signon/web/SignOnFilter.java
+        line_start: 166
+        line_end: 186
+        excerpt: |
+          if (rememberUserName != null) {
+            Cookie userNameCookie = new Cookie(COOKIE_NAME, userName);
+            userNameCookie.setMaxAge(2678400);
+          } else { ... cookies[loop].setMaxAge(0);
+    stack_metadata:
+      framework: servlet-filter
+  - record_key: SIGN-RULE-0005
+    kind: business-rule
+    capability_key: sign-on-security
+    requirement: >
+      The system SHALL reject creation of a user whose user name exceeds 25 characters, whose password exceeds the maximum password length, or whose user name contains the characters '%' or '*'.
+    plain_text: >
+      New user names may be at most 25 characters and may not contain % or *; passwords also have a maximum length.
+    technical_note: >
+      UserEJB.ejbCreate throws CreateException; limits come from UserLocal.MAX_USERID_LENGTH=25 and MAX_PASSWD_LENGTH. The wildcard ban likely protects LIKE-style finders. Password limit value not excerpted (redacted in source view).
+    interface: false
+    confidence: medium
+    confidence_basis: One clear place (ejbCreate); no minimum length or emptiness rules visible, and password limit value was not readable.
+    risk_class: operational
+    basis: Input checks at user creation.
+    traces:
+      - path: legacy-source/app/src/components/signon/src/com/sun/j2ee/blueprints/signon/user/ejb/UserEJB.java
+        line_start: 64
+        line_end: 76
+        excerpt: |
+          if(userName.length() > UserLocal.MAX_USERID_LENGTH) {
+          ...
+          if( (userName.indexOf('%') != -1) ||
+          (userName.indexOf('*') != -1) ) {
+      - path: legacy-source/app/src/components/signon/src/com/sun/j2ee/blueprints/signon/user/ejb/UserLocal.java
+        line_start: 46
+        line_end: 46
+        excerpt: |
+          public static final int MAX_USERID_LENGTH = 25;
+    stack_metadata:
+      ejb.bean: UserEJB
+  - record_key: SIGN-WF-0006
+    kind: workflow
+    capability_key: customer-accounts
+    requirement: >
+      WHEN a new-user form is posted the system SHALL create the user through the sign-on service and redirect to a target page; IF creation fails THEN it SHALL redirect to the user creation error page.
+    plain_text: >
+      A visitor can register a sign-in account; if registration is refused they see an error page.
+    technical_note: >
+      CreateUserServlet.doPost reads j_username/j_password, calls SignOnEJB.createUser and catches CreateException -> user_creation_error.jsp. Duplicate user names surface as CreateException (DuplicateKeyException from container, not seen explicitly). Filed under customer-accounts as account creation; the sign-on capability is the alternative. Reachability (servlet mapping in web.xml) not in this module.
+    interface: false
+    confidence: medium
+    confidence_basis: One clear place; success target line is partly obscured in the readable source and the web mapping is outside the module.
+    dispute:
+      reason: unresolved-reachability
+      detail: >
+        No web.xml mapping for CreateUserServlet in this module; settle by checking the petstore web module's web.xml.
+    risk_class: operational
+    basis: Servlet handles user creation.
+    traces:
+      - path: legacy-source/app/src/components/signon/src/com/sun/j2ee/blueprints/signon/web/CreateUserServlet.java
+        line_start: 59
+        line_end: 75
+        excerpt: |
+          public  void doPost(HttpServletRequest request, HttpServletResponse  response)
+          ...
+          } catch (CreateException ce) {
+              response.sendRedirect("user_creation_error.jsp");
+    stack_metadata:
+      framework: servlet
+      ejb.bean: SignOnEJB
+  - record_key: SIGN-ENT-0007
+    kind: entity
+    capability_key: sign-on-security
+    requirement: >
+      The system SHALL keep a user credential record with a unique user name as identifier and a password.
+    plain_text: >
+      Each sign-in account has a unique user name and a password.
+    technical_note: >
+      CMP 2.x entity UserEJB, abstract schema User, cmp fields userName and password, primkey-field userName, non-reentrant.
+    interface: false
+    confidence: high
+    confidence_basis: Declared in ejb-jar.xml and abstract accessors in UserEJB.
+    risk_class: regulated
+    basis: Persistent user data.
+    traces:
+      - path: legacy-source/app/src/components/signon/src/ejb-jar.xml
+        line_start: 48
+        line_end: 65
+        excerpt: |
+          <ejb-name>UserEJB</ejb-name>
+          <persistence-type>Container</persistence-type>
+          <primkey-field>userName</primkey-field>
+    stack_metadata:
+      ejb.bean: UserEJB
+      db.object: User
+suspected_defects:
+  - capability_key: sign-on-security
+    record_keys: [SIGN-RULE-0003]
+    severity: high
+    category: other
+    title: Passwords stored and compared in plain text
+    description: >
+      The password is persisted as given and compared with String.equals; no hashing.
+    traces:
+      - path: legacy-source/app/src/components/signon/src/com/sun/j2ee/blueprints/signon/user/ejb/UserEJB.java
+        line_start: 88
+        line_end: 90
+  - capability_key: sign-on-security
+    record_keys: [SIGN-WF-0006]
+    severity: high
+    category: other
+    title: User creation logs credentials to standard output
+    description: >
+      CreateUserServlet prints the user name and the password to System.out when creating a user.
+    traces:
+      - path: legacy-source/app/src/components/signon/src/com/sun/j2ee/blueprints/signon/web/CreateUserServlet.java
+        line_start: 68
+        line_end: 69
+  - capability_key: sign-on-security
+    record_keys: [SIGN-REQ-0001]
+    severity: medium
+    category: other
+    title: Protected-resource roles are parsed but never enforced; exact-match only
+    description: >
+      SignOnDAO reads auth-constraint role names into ProtectedResource but SignOnFilter never checks them, so any signed-on user passes. Matching is exact string equality, so a wildcard pattern protects nothing.
+    traces:
+      - path: legacy-source/app/src/components/signon/src/com/sun/j2ee/blueprints/signon/web/SignOnFilter.java
+        line_start: 139
+        line_end: 151
+      - path: legacy-source/app/src/components/signon/src/com/sun/j2ee/blueprints/signon/web/SignOnDAO.java
+        line_start: 137
+        line_end: 150
+  - capability_key: sign-on-security
+    record_keys: [SIGN-RULE-0002]
+    severity: medium
+    category: other
+    title: Session not renewed on sign-on and failed login has no throttle
+    description: >
+      Sign-on sets attributes on the existing session without issuing a new one, and the redirect uses the stored original URL without a null check (a direct post to the sign-on check yields redirect to null). No attempt limit exists.
+    traces:
+      - path: legacy-source/app/src/components/signon/src/com/sun/j2ee/blueprints/signon/web/SignOnFilter.java
+        line_start: 191
+        line_end: 205
+findings: []
