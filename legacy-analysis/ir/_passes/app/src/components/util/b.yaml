@@ -1,0 +1,58 @@
+records:
+  - record_key: BATCH-REQ-0001
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL provide a shared diagnostic-output helper that writes
+      debug messages and exception details to the error stream only when a
+      build-time debugging flag is enabled, and SHALL produce no diagnostic
+      output when the flag is disabled.
+    confidence: medium
+    confidence_basis: >
+      One clear place (the Debug class); the flag is a compile-time constant set
+      to false. No test or config seen. Capability fit is inferred, not read.
+    risk_class: operational
+    basis: >
+      Debug is the only source file in the module; every print method is guarded
+      by debuggingOn, which is a constant false. Fits no listed capability
+      exactly; filed under batch-operations as the closest operational home.
+    plain_text: >
+      The application has an internal troubleshooting aid that can print
+      diagnostic messages and error details, but it is switched off and prints
+      nothing in the delivered configuration.
+    technical_note: >
+      Debug.java: public static final boolean debuggingOn = false; print/println
+      guard on it. println prefixes ">>". Throwable print writes message to
+      System.out and stack trace via printStackTrace.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/util/tracer/src/com/sun/j2ee/blueprints/util/tracer/Debug.java
+        line_start: 44
+        line_end: 79
+        excerpt: |
+          public final class Debug {
+
+              public static final boolean debuggingOn = false;
+
+              public static void print(String msg) {
+                  if (debuggingOn) {
+                      System.err.print(msg);
+                  }
+              }
+    stack_metadata:
+      framework: plain Java utility
+findings: []
+suspected_defects:
+  - capability_key: batch-operations
+    record_keys: [BATCH-REQ-0001]
+    severity: low
+    category: other
+    title: Throwable diagnostics split across System.out and System.err
+    description: >
+      Message strings go to System.err, but Throwable details (message, extra
+      msg) go to System.out while the stack trace goes to stderr. Inconsistent
+      streams; only matters if the flag is ever enabled.
+    traces:
+      - path: legacy-source/app/src/components/util/tracer/src/com/sun/j2ee/blueprints/util/tracer/Debug.java
+        line_start: 68
+        line_end: 75
