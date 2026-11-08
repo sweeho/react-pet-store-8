@@ -1,0 +1,228 @@
+records:
+  - record_key: CUSTACC-BR-0001
+    kind: business-rule
+    capability_key: customer-accounts
+    requirement: The system SHALL, when a customer is created, automatically create an account with status "active" and attach it to the customer.
+    confidence: high
+    confidence_basis: Enforced in the creation hook of the customer bean and the status constant in the account home interface (two places); no test or document seen.
+    risk_class: operational
+    basis: CustomerEJB.ejbPostCreate calls AccountLocalHome.create(Active); the constant Active = "active" is defined in AccountLocalHome.
+    plain_text: Every new customer automatically gets an account that starts out active.
+    technical_note: CustomerEJB.ejbPostCreate looks up ejb/Account via JNDI and creates it; a naming failure is rethrown as CreateException.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/customer/src/com/sun/j2ee/blueprints/customer/ejb/CustomerEJB.java
+        line_start: 78
+        line_end: 79
+        excerpt: |
+          AccountLocal account = alh.create(AccountLocalHome.Active);
+                  setAccount(account);
+      - path: legacy-source/app/src/components/customer/src/com/sun/j2ee/blueprints/customer/account/ejb/AccountLocalHome.java
+        line_start: 48
+        line_end: 49
+        excerpt: |
+          public static final String Active = "active";
+              public static final String Disabled = "disabled";
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: CustomerEJB
+  - record_key: CUSTACC-BR-0002
+    kind: business-rule
+    capability_key: customer-accounts
+    requirement: The system SHALL, when a customer is created, create a profile with preferred language "en_US", no favourite category, and the my-list and banner preferences both enabled.
+    confidence: high
+    confidence_basis: Defaults are declared as constants in the profile home interface and applied in the customer creation hook (two places). Not covered by any test or document seen.
+    risk_class: presentational
+    basis: CustomerEJB.ejbPostCreate passes ProfileLocalHome defaults to create; constants declared in ProfileLocalHome.
+    plain_text: A new customer starts with English (US) as the language, no favourite category, and the "my list" and banner options switched on.
+    technical_note: Defaults in ProfileLocalHome constants; applied by CustomerEJB.ejbPostCreate. ProfileInfo holds default flags as false, differing from these constants; its use is not established in this module.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/customer/src/com/sun/j2ee/blueprints/customer/profile/ejb/ProfileLocalHome.java
+        line_start: 44
+        line_end: 47
+        excerpt: |
+          public static final String DefaultPreferredLanguage = "en_US";
+              public static final String DefaultFavoriteCategory = null;
+              public static final boolean DefaultMyListPreference = true;
+              public static final boolean DefaultBannerPreference = true;
+      - path: legacy-source/app/src/components/customer/src/com/sun/j2ee/blueprints/customer/ejb/CustomerEJB.java
+        line_start: 82
+        line_end: 85
+        excerpt: |
+          ProfileLocal profile = plh.create(ProfileLocalHome.DefaultPreferredLanguage,
+                  ProfileLocalHome.DefaultFavoriteCategory, ProfileLocalHome.DefaultMyListPreference,
+                  ProfileLocalHome.DefaultBannerPreference);
+                  setProfile(profile);
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: ProfileEJB
+  - record_key: CUSTACC-BR-0003
+    kind: business-rule
+    capability_key: customer-accounts
+    requirement: The system SHALL, when an account is created without contact and card details, create an empty contact record and an empty credit card record and attach both to the account.
+    confidence: medium
+    confidence_basis: One clear place (AccountEJB.ejbPostCreate); no second source.
+    risk_class: operational
+    basis: AccountEJB.ejbPostCreate(String) creates ContactInfo and CreditCard through their homes and links them.
+    plain_text: A new account begins with blank contact details and a blank credit card entry that the customer fills in later.
+    technical_note: JNDI lookups of ejb/ContactInfo and ejb/CreditCard; NamingException becomes CreateException. A second create variant accepts pre-built contact info and card.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/customer/src/com/sun/j2ee/blueprints/customer/account/ejb/AccountEJB.java
+        line_start: 80
+        line_end: 92
+        excerpt: |
+          public void ejbPostCreate(String status) throws CreateException {
+                  setStatus(status);
+                  try {
+                      InitialContext ic = new InitialContext();
+                      ContactInfoLocalHome cih = (ContactInfoLocalHome) ic.lookup("java:comp/env/ejb/ContactInfo");
+                      ContactInfoLocal contactInfo = cih.create();
+                      setContactInfo(contactInfo);
+                      CreditCardLocalHome cch = (CreditCardLocalHome) ic.lookup("java:comp/env/ejb/CreditCard");
+                      CreditCardLocal creditCard = cch.create();
+                      setCreditCard(creditCard);
+                  } catch (javax.naming.NamingException ne) {
+                      throw new CreateException("ContactInfoEJB error: naming exception looking up contact info or credit card");
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: AccountEJB
+  - record_key: CUSTACC-BR-0004
+    kind: business-rule
+    capability_key: customer-accounts
+    requirement: The system SHALL delete a customer's account, profile, contact details, address and credit card record when the owning record is deleted.
+    confidence: medium
+    confidence_basis: Declared once in the deployment descriptor as cascade-delete on every relationship; bean ejbRemove methods are empty. Whether any caller removes customers is not visible here.
+    risk_class: regulated
+    basis: Five relationships in ejb-jar.xml carry cascade-delete on the child role (account, address, profile, contact info, credit card).
+    plain_text: Deleting a customer also deletes everything stored about them, including contact details, address, preferences and card data.
+    technical_note: Container-managed cascade-delete in ejb-jar.xml; ejbRemove bodies are empty. Reachability of customer removal is not established in this module.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/customer/src/ejb-jar.xml
+        line_start: 264
+        line_end: 370
+        excerpt: |
+          <relationships>
+          <cascade-delete />
+          </relationships>
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      db.object: Customer, Account, Profile, ContactInfo, Address, CreditCard
+  - record_key: CUSTACC-ENT-0001
+    kind: entity
+    capability_key: customer-accounts
+    requirement: The system SHALL hold each customer as one record identified by a unique user id, linked one-to-one to an account (status) and a profile (preferred language, favourite category, my-list preference, banner preference).
+    confidence: high
+    confidence_basis: Stated in the CMP field and relationship declarations of the descriptor and the abstract bean accessors (two places).
+    risk_class: operational
+    basis: Customer primary key userId (String); CMR fields account and profile; Profile CMP fields; Account CMP field status.
+    plain_text: A customer is identified by a unique user name and has one account and one preferences profile.
+    technical_note: CustomerEJB prim-key userId; AccountEJB has CMR to ContactInfo and CreditCard; ContactInfo has fields givenName, familyName, telephone, email and links to Address (street 1/2, city, state, zip, country).
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/customer/src/ejb-jar.xml
+        line_start: 57
+        line_end: 61
+        excerpt: |
+          <cmp-field>
+                  <description>no description</description>
+                  <field-name>userId</field-name>
+                </cmp-field>
+                <primkey-field>userId</primkey-field>
+      - path: legacy-source/app/src/components/customer/src/com/sun/j2ee/blueprints/customer/ejb/CustomerEJB.java
+        line_start: 52
+        line_end: 52
+        excerpt: |
+          public abstract String getUserId();
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: CustomerEJB
+  - record_key: CUSTACC-REQ-0001
+    kind: requirement
+    capability_key: customer-accounts
+    requirement: The system SHALL allow an account status of "active" or "disabled".
+    confidence: low
+    confidence_basis: Only the two constants are seen; no code in this module reads or enforces "disabled". Any effect on sign-on is outside this module.
+    risk_class: operational
+    basis: AccountLocalHome constants Active and Disabled.
+    plain_text: An account can be active or disabled.
+    technical_note: Disabled is declared but never set or checked in this module.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/customer/src/com/sun/j2ee/blueprints/customer/account/ejb/AccountLocalHome.java
+        line_start: 48
+        line_end: 49
+        excerpt: |
+          public static final String Active = "active";
+              public static final String Disabled = "disabled";
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: AccountEJB
+  - record_key: CUSTACC-REQ-0002
+    kind: requirement
+    capability_key: customer-accounts
+    requirement: The system SHALL provide a way to list all customers and to look one up by user id.
+    confidence: medium
+    confidence_basis: One clear place (query and finder declared in the descriptor and home interface); callers not seen here.
+    risk_class: operational
+    basis: findAllCustomers EJB-QL "Select OBJECT(a) From Customer a" and findByPrimaryKey.
+    plain_text: Staff can retrieve every customer, or find one by user name.
+    technical_note: Finder defined in ejb-jar.xml query; method permission unchecked.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/customer/src/ejb-jar.xml
+        line_start: 80
+        line_end: 87
+        excerpt: |
+          <query>
+                  <description>EJBQL to find all Customers</description>
+                  <query-method>
+                    <method-name>findAllCustomers</method-name>
+          	  <!--method-intf>LocalHome</method-intf--> 
+          	  <method-params />
+                  </query-method>
+                  <ejb-ql>Select OBJECT(a) From Customer a</ejb-ql>
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: CustomerEJB
+  - record_key: CUSTACC-BR-0005
+    kind: business-rule
+    capability_key: sign-on-security
+    requirement: The system SHALL NOT restrict access by role to the customer, profile, contact info, address and credit card operations at the component level.
+    confidence: medium
+    confidence_basis: One clear place; unchecked method permissions in the descriptor. Authorisation may be applied by callers, which this pass cannot see. Filed under sign-on-security as the nearest key.
+    risk_class: regulated
+    basis: Every method-permission in the descriptor is declared unchecked.
+    plain_text: The customer data component itself performs no role check; any caller inside the application may read or change customer, contact and card data.
+    technical_note: ejb-jar.xml method-permission unchecked for all entity beans; security-identity use-caller-identity.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/customer/src/ejb-jar.xml
+        line_start: 372
+        line_end: 374
+        excerpt: |
+          <method-permission>
+                <unchecked />
+                <method>
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: CustomerEJB
+findings: []
+suspected_defects:
+  - capability_key: customer-accounts
+    record_keys: [CUSTACC-BR-0002]
+    severity: low
+    category: other
+    title: Profile default flags differ between constants and ProfileInfo holder
+    description: >
+      The home interface defaults my-list and banner preferences to true, while the ProfileInfo
+      value object initialises the same two flags to false. Which is live depends on callers outside this module.
+    traces:
+      - path: legacy-source/app/src/components/customer/src/com/sun/j2ee/blueprints/customer/profile/ejb/ProfileInfo.java
+        line_start: 44
+        line_end: 45
+        excerpt: |
+          private  boolean defaultMyListPreference = false;
+              private  boolean defaultBannerPreference = false;
