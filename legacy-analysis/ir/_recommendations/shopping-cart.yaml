@@ -1,0 +1,91 @@
+recommendations:
+  - record_key: SHOP-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cart passes A and B agree with the code; accept. Key SHOP-REQ-0001/0002/0004 is reused by the line item pass with different content, so check which record is meant.
+  - record_key: SHOP-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cart passes A and B agree with the code; accept. Key SHOP-REQ-0001/0002/0004 is reused by the line item pass with different content, so check which record is meant.
+  - record_key: SHOP-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cart passes A and B agree with the code; accept. Key SHOP-REQ-0001/0002/0004 is reused by the line item pass with different content, so check which record is meant.
+  - record_key: SHOP-REQ-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cart passes A and B agree with the code; accept. Key SHOP-REQ-0001/0002/0004 is reused by the line item pass with different content, so check which record is meant.
+  - record_key: SHOP-REQ-0006
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cart passes A and B agree with the code; accept. Key SHOP-REQ-0001/0002/0004 is reused by the line item pass with different content, so check which record is meant.
+  - record_key: SHOP-REQ-0007
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cart passes A and B agree with the code; accept. Key SHOP-REQ-0001/0002/0004 is reused by the line item pass with different content, so check which record is meant.
+  - record_key: CART-REQ-0011
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cart passes A and B agree with the code; accept. Key SHOP-REQ-0001/0002/0004 is reused by the line item pass with different content, so check which record is meant.
+  - record_key: SHOP-REQ-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Cart item count is read in the bean and the model; accept. The key is reused for line item access, which is a separate unrestricted-access rule.
+  - record_key: CART-REQ-0006
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Petstore web actions and cart item count share this key; the code agrees for both. Split at ingest.
+  - record_key: CART-REQ-0007
+    recommendation: accept
+    confidence: high
+    reason: >
+      Seen in the facade, session listener and two actions.
+  - record_key: SHOPPING-CART-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Catch block is clear; whether 0 removes the line is decided in the cart, which removes it.
+  - record_key: SHOPPING-CART-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Single JSP conditional, no contradicting source.
+  - record_key: CART-BR-0010
+    recommendation: accept
+    confidence: low
+    reason: >
+      Silent omission looks like a legacy defect (error only printed to stdout). Confirm what the code does; whether it is right is the Business Owner's call in the defect register.
+  - record_key: SHOP-ENT-0008
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Value object matches the cart view.
+  - record_key: SHOP-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      CMP descriptor and bean accessors agree.
+  - record_key: SHOP-BR-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Overlaps SHOP-REQ-0001/0002 of the line item pass; fold together at review.
+  - record_key: SHOP-BR-0004
+    recommendation: accept
+    confidence: low
+    reason: >
+      Bare float type with no rationale; Business Owner should confirm precision, and a money type is likely wanted.
+  - record_key: ORD-REQ-0013
+    recommendation: reject
+    confidence: medium
+    reason: >
+      Filed here only as the closest capability; it is page navigation, caching is disabled in config, and PREVIOUS before any view throws an NPE. Not a shopping-cart rule.
