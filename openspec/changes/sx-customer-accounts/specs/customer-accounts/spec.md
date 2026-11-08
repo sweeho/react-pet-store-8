@@ -196,7 +196,7 @@ The system SHALL NOT impose format, length or required-value checks on contact n
 
 Recovered from: CUST-REQ-0007
 
-The system MAY represent a contact as an XML document with elements FamilyName, GivenName, Address, Email and Phone in that order.
+The system SHALL, when a contact is represented as an XML document, emit the elements FamilyName, GivenName, Address, Email and Phone in that order.
 
 #### Scenario: Contact XML representation
 
