@@ -1,0 +1,376 @@
+{
+ "records": [
+  {
+   "record_key": "DDL-ENT-0001",
+   "kind": "entity",
+   "capability_key": "catalog-browsing",
+   "requirement": "The system SHALL identify each product category by a unique, mandatory category id of at most 10 characters.",
+   "confidence": "medium",
+   "confidence_basis": "One clear place per dialect (identical in both scripts); no code read in this pass.",
+   "risk_class": "operational",
+   "basis": "category(catid PK). Language-neutral parent of category_details.",
+   "plain_text": "Every product category has its own unique short code.",
+   "technical_note": "category(catid PK). Language-neutral parent of category_details.",
+   "interface": false,
+   "traces": [
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_cloudscape.sql",
+     "anchor": "category",
+     "line_start": 13,
+     "line_end": 15,
+     "excerpt": "catid char(10) not null,"
+    },
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_oracle.sql",
+     "anchor": "category",
+     "line_start": 13,
+     "line_end": 15,
+     "excerpt": "catid char(10) not null,"
+    }
+   ],
+   "stack_metadata": {
+    "db.object": "category",
+    "db.kind": "table"
+   }
+  },
+  {
+   "record_key": "DDL-ENT-0002",
+   "kind": "entity",
+   "capability_key": "localization",
+   "requirement": "The system SHALL hold one category_details row per (category, locale) pair, with a mandatory name, an optional image and description, and a category id that references an existing category.",
+   "confidence": "medium",
+   "confidence_basis": "Primary and foreign key declared in both DDL scripts; locale semantics inferred from column name.",
+   "risk_class": "presentational",
+   "basis": "PK (catid, locale); FK fk_category_details_1 to category. name varchar(80) NOT NULL; image/descn varchar(255) nullable; locale 10 chars.",
+   "plain_text": "Each category has a name, and optionally a picture and description, for each language; a category's text can only exist for a category that exists.",
+   "technical_note": "PK (catid, locale); FK fk_category_details_1 to category. name varchar(80) NOT NULL; image/descn varchar(255) nullable; locale 10 chars.",
+   "interface": false,
+   "traces": [
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_cloudscape.sql",
+     "anchor": "category_details",
+     "line_start": 19,
+     "line_end": 26,
+     "excerpt": "constraint pk_category_details primary key (catid, locale),"
+    },
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_oracle.sql",
+     "anchor": "category_details",
+     "line_start": 19,
+     "line_end": 26,
+     "excerpt": "constraint pk_category_details primary key (catid, locale),"
+    }
+   ],
+   "stack_metadata": {
+    "db.object": "category_details",
+    "db.kind": "table"
+   }
+  },
+  {
+   "record_key": "DDL-ENT-0003",
+   "kind": "entity",
+   "capability_key": "catalog-browsing",
+   "requirement": "The system SHALL identify each catalog item by a unique item id and SHALL require every item to belong to an existing product.",
+   "confidence": "medium",
+   "confidence_basis": "PK and FK in both scripts; product table is outside this unit.",
+   "risk_class": "operational",
+   "basis": "item(itemid PK, productid NOT NULL FK to product).",
+   "plain_text": "Every item for sale has a unique code and must belong to a product that exists.",
+   "technical_note": "item(itemid PK, productid NOT NULL FK to product).",
+   "interface": false,
+   "traces": [
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_cloudscape.sql",
+     "anchor": "item",
+     "line_start": 49,
+     "line_end": 53,
+     "excerpt": "constraint fk_item_1 foreign key (productid) references product (productid));"
+    },
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_oracle.sql",
+     "anchor": "item",
+     "line_start": 49,
+     "line_end": 53,
+     "excerpt": "constraint fk_item_1 foreign key (productid) references product (productid));"
+    }
+   ],
+   "stack_metadata": {
+    "db.object": "item",
+    "db.kind": "table"
+   }
+  },
+  {
+   "record_key": "DDL-ENT-0004",
+   "kind": "entity",
+   "capability_key": "customer-accounts",
+   "requirement": "The system SHALL require a street line, city, state, postal code and country for every stored address, and SHALL allow a second street line to be omitted.",
+   "confidence": "medium",
+   "confidence_basis": "NOT NULL constraints identical in both scripts; no validation code read here.",
+   "risk_class": "operational",
+   "basis": "address(address_id PK varchar(40)); street_name2 is the only nullable column.",
+   "plain_text": "An address must have a street, city, state, postal code and country; a second street line is optional.",
+   "technical_note": "address(address_id PK varchar(40)); street_name2 is the only nullable column.",
+   "interface": false,
+   "traces": [
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_cloudscape.sql",
+     "anchor": "address",
+     "line_start": 81,
+     "line_end": 89,
+     "excerpt": "street_name2 varchar(80),"
+    },
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_oracle.sql",
+     "anchor": "address",
+     "line_start": 81,
+     "line_end": 89,
+     "excerpt": "street_name2 varchar(80),"
+    }
+   ],
+   "stack_metadata": {
+    "db.object": "address",
+    "db.kind": "table"
+   }
+  },
+  {
+   "record_key": "DDL-ENT-0005",
+   "kind": "entity",
+   "capability_key": "customer-accounts",
+   "requirement": "The system SHALL require family name, given name, telephone, email and an existing address for every contact record.",
+   "confidence": "medium",
+   "confidence_basis": "NOT NULL and FK in both scripts; no uniqueness on email is declared.",
+   "risk_class": "operational",
+   "basis": "contact_info(contact_id PK); FK fk_contact_info_1 to address; all columns NOT NULL. Email is not constrained as unique.",
+   "plain_text": "Every contact must have a name, phone number, email address and a stored postal address.",
+   "technical_note": "contact_info(contact_id PK); FK fk_contact_info_1 to address; all columns NOT NULL. Email is not constrained as unique.",
+   "interface": false,
+   "traces": [
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_cloudscape.sql",
+     "anchor": "contact_info",
+     "line_start": 93,
+     "line_end": 101,
+     "excerpt": "constraint fk_contact_info_1 foreign key (address_id) references address (address_id));"
+    },
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_oracle.sql",
+     "anchor": "contact_info",
+     "line_start": 93,
+     "line_end": 101,
+     "excerpt": "constraint fk_contact_info_1 foreign key (address_id) references address (address_id));"
+    }
+   ],
+   "stack_metadata": {
+    "db.object": "contact_info",
+    "db.kind": "table"
+   }
+  },
+  {
+   "record_key": "DDL-ENT-0006",
+   "kind": "entity",
+   "capability_key": "checkout-payment",
+   "requirement": "The system SHALL require a card number, card type and expiry date for every stored credit card record.",
+   "confidence": "medium",
+   "confidence_basis": "Declared once per dialect; absence of format checks is visible but validation may live in application code not read here.",
+   "risk_class": "financial",
+   "basis": "credit_card(card_id PK); card_number varchar(40), expiry_date varchar(10) stored as text, no CHECK on format or date.",
+   "plain_text": "A saved payment card must have a number, a type and an expiry date.",
+   "technical_note": "credit_card(card_id PK); card_number varchar(40), expiry_date varchar(10) stored as text, no CHECK on format or date.",
+   "interface": false,
+   "traces": [
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_cloudscape.sql",
+     "anchor": "credit_card",
+     "line_start": 105,
+     "line_end": 110,
+     "excerpt": "expiry_date varchar(10) not null,"
+    },
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_oracle.sql",
+     "anchor": "credit_card",
+     "line_start": 105,
+     "line_end": 110,
+     "excerpt": "expiry_date varchar(10) not null,"
+    }
+   ],
+   "stack_metadata": {
+    "db.object": "credit_card",
+    "db.kind": "table"
+   }
+  },
+  {
+   "record_key": "DDL-ENT-0007",
+   "kind": "entity",
+   "capability_key": "customer-accounts",
+   "requirement": "The system SHALL require every account to have a status, an existing contact record and an existing credit card record.",
+   "confidence": "medium",
+   "confidence_basis": "Constraints in both scripts; allowed status values are not constrained in DDL.",
+   "risk_class": "operational",
+   "basis": "account(account_id PK); status varchar(20) NOT NULL with no CHECK on allowed values; FKs to contact_info and credit_card.",
+   "plain_text": "Every customer account has a status, contact details and a payment card on file.",
+   "technical_note": "account(account_id PK); status varchar(20) NOT NULL with no CHECK on allowed values; FKs to contact_info and credit_card.",
+   "interface": false,
+   "traces": [
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_cloudscape.sql",
+     "anchor": "account",
+     "line_start": 114,
+     "line_end": 121,
+     "excerpt": "status varchar(20) not null,"
+    },
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_oracle.sql",
+     "anchor": "account",
+     "line_start": 114,
+     "line_end": 121,
+     "excerpt": "status varchar(20) not null,"
+    }
+   ],
+   "stack_metadata": {
+    "db.object": "account",
+    "db.kind": "table"
+   }
+  },
+  {
+   "record_key": "DDL-ENT-0008",
+   "kind": "entity",
+   "capability_key": "sign-on-security",
+   "requirement": "The system SHALL link each customer to exactly one sign-on user, one account and one profile, each of which MUST exist, with the user id unique per customer.",
+   "confidence": "medium",
+   "confidence_basis": "PK/FKs in both scripts; signon_user and profile tables are outside this unit.",
+   "risk_class": "operational",
+   "basis": "customer(user_id PK, FK to signon_user.username; FK account; FK profile). Filed under sign-on-security because the PK is the login name; also touches customer-accounts.",
+   "plain_text": "Each customer is tied to one sign-on login, one account and one profile; none can be missing.",
+   "technical_note": "customer(user_id PK, FK to signon_user.username; FK account; FK profile). Filed under sign-on-security because the PK is the login name; also touches customer-accounts.",
+   "interface": false,
+   "traces": [
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_cloudscape.sql",
+     "anchor": "customer",
+     "line_start": 135,
+     "line_end": 142,
+     "excerpt": "constraint fk_customer_1 foreign key (user_id) references signon_user (username),"
+    },
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_oracle.sql",
+     "anchor": "customer",
+     "line_start": 135,
+     "line_end": 142,
+     "excerpt": "constraint fk_customer_1 foreign key (user_id) references signon_user (username),"
+    }
+   ],
+   "stack_metadata": {
+    "db.object": "customer",
+    "db.kind": "table"
+   }
+  },
+  {
+   "record_key": "DDL-ENT-0009",
+   "kind": "entity",
+   "capability_key": "supplier-fulfilment",
+   "requirement": "The system SHALL keep exactly one mandatory stock quantity per item id.",
+   "confidence": "medium",
+   "confidence_basis": "Single declaration per dialect; no CHECK or FK visible, so non-negativity is not enforced by DDL.",
+   "risk_class": "operational",
+   "basis": "inventory(item_id PK, quantity integer NOT NULL). No CHECK preventing negative quantity; no FK to item declared here.",
+   "plain_text": "Each item has exactly one recorded stock quantity.",
+   "technical_note": "inventory(item_id PK, quantity integer NOT NULL). No CHECK preventing negative quantity; no FK to item declared here.",
+   "interface": false,
+   "traces": [
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_cloudscape.sql",
+     "anchor": "inventory",
+     "line_start": 206,
+     "line_end": 209,
+     "excerpt": "quantity integer not null,"
+    },
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_oracle.sql",
+     "anchor": "inventory",
+     "line_start": 206,
+     "line_end": 209,
+     "excerpt": "quantity integer not null,"
+    }
+   ],
+   "stack_metadata": {
+    "db.object": "inventory",
+    "db.kind": "table"
+   }
+  },
+  {
+   "record_key": "DDL-ENT-0010",
+   "kind": "entity",
+   "capability_key": "batch-operations",
+   "requirement": "The system SHALL keep one mandatory integer counter value per named counter.",
+   "confidence": "low",
+   "confidence_basis": "Purpose inferred from table name only.",
+   "risk_class": "operational",
+   "basis": "counter(name PK, counter integer NOT NULL). Purpose (id generation) inferred from the name; closest listed capability chosen.",
+   "plain_text": "The system keeps named running counters, such as for generating sequence numbers.",
+   "technical_note": "counter(name PK, counter integer NOT NULL). Purpose (id generation) inferred from the name; closest listed capability chosen.",
+   "interface": false,
+   "traces": [
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_cloudscape.sql",
+     "anchor": "counter",
+     "line_start": 213,
+     "line_end": 216,
+     "excerpt": "counter integer not null,"
+    },
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_oracle.sql",
+     "anchor": "counter",
+     "line_start": 213,
+     "line_end": 216,
+     "excerpt": "counter integer not null,"
+    }
+   ],
+   "stack_metadata": {
+    "db.object": "counter",
+    "db.kind": "table"
+   }
+  }
+ ],
+ "findings": [],
+ "suspected_defects": [
+  {
+   "capability_key": "checkout-payment",
+   "record_keys": [
+    "DDL-ENT-0006"
+   ],
+   "severity": "medium",
+   "category": "other",
+   "title": "Card number and expiry stored as unconstrained text",
+   "description": "The credit_card table stores card_number and expiry_date as plain varchar with no CHECK on format or date validity.",
+   "traces": [
+    {
+     "kind": "db_object",
+     "path": "db/schema/petstore_cloudscape.sql",
+     "anchor": "credit_card",
+     "line_start": 105,
+     "line_end": 110
+    }
+   ]
+  }
+ ]
+}
