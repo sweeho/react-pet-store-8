@@ -1,0 +1,243 @@
+records:
+  - record_key: ORDER-PROCESSING-WORKFLOW-ENTITY-0001
+    kind: entity
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL keep exactly one workflow-tracking record per order, identified by the order id, holding the order's current workflow status as a free-form string.
+    confidence: high
+    confidence_basis: >
+      Declared in the deployment descriptor (cmp fields, primkey-field) and mirrored by the abstract accessors in the bean class; two places.
+    risk_class: operational
+    basis: Container-managed entity Manager with primary key orderId and field status.
+    plain_text: >
+      Each order has one tracking record that holds the order number and where the order currently stands in its processing.
+    technical_note: >
+      CMP 2.x entity ManagerEJB, abstract schema Manager, primkey-field orderId (String), cmp-field status. Status is not constrained to a fixed set at this layer.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/processmanager/src/ejb-jar.xml
+        line_start: 46
+        line_end: 67
+        excerpt: |
+          <entity>
+            <display-name>ManagerEB</display-name>
+            <ejb-name>ManagerEJB</ejb-name>
+            <persistence-type>Container</persistence-type>
+            <prim-key-class>java.lang.String</prim-key-class>
+            <abstract-schema-name>Manager</abstract-schema-name>
+            <cmp-field><field-name>status</field-name></cmp-field>
+            <cmp-field><field-name>orderId</field-name></cmp-field>
+            <primkey-field>orderId</primkey-field>
+    stack_metadata:
+      framework: EJB 2.x CMP
+      ejb.bean: ManagerEJB
+      ejb.transaction: Required
+  - record_key: ORDER-PROCESSING-WORKFLOW-REQ-0001
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL create a tracking record with a given order id and initial status when a new order is received, so that the fulfilment workflow can begin.
+    confidence: medium
+    confidence_basis: >
+      One clear place (createManager and ejbCreate). No caller is in this module so which initial status is used is not visible here.
+    risk_class: operational
+    basis: createManager delegates to entity create with orderId and status; ejbCreate stores both.
+    plain_text: >
+      When a new order comes in, the system starts tracking it with its order number and a starting status.
+    technical_note: >
+      ProcessManagerEJB.createManager calls ManagerLocalHome.create(orderId,status). No explicit duplicate check; a duplicate key would surface as the container's CreateException. Container transaction Required.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/processmanager/src/com/sun/j2ee/blueprints/processmanager/ejb/ProcessManagerEJB.java
+        line_start: 62
+        line_end: 69
+        excerpt: |
+          public void createManager(String orderId, String status) throws CreateException {
+            ManagerLocal manager = mlh.create(orderId, status);
+          }
+      - path: legacy-source/app/src/components/processmanager/src/com/sun/j2ee/blueprints/processmanager/manager/ejb/ManagerEJB.java
+        line_start: 61
+        line_end: 65
+        excerpt: |
+          public String ejbCreate(String orderId, String status) throws CreateException {
+              setOrderId(orderId);
+              setStatus(status);
+              return null;
+          }
+    stack_metadata:
+      framework: EJB 2.x
+      ejb.bean: ProcessManagerEJB
+      ejb.transaction: Required
+  - record_key: ORDER-PROCESSING-WORKFLOW-REQ-0002
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL allow the status of an existing order to be overwritten with a new status, and SHALL report a not-found error when no tracking record exists for the order id.
+    confidence: medium
+    confidence_basis: >
+      One clear implementation; no transition validation exists, which I inferred from the absence of any check in the code.
+    risk_class: operational
+    basis: updateStatus finds by primary key then sets status; FinderException propagates.
+    plain_text: >
+      The system can change the status of an order that is already being tracked; for an unknown order it reports an error.
+    technical_note: >
+      ProcessManagerEJB.updateStatus: findByPrimaryKey then setStatus. The new status is not compared with the previous one, so any status can follow any status.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/processmanager/src/com/sun/j2ee/blueprints/processmanager/ejb/ProcessManagerEJB.java
+        line_start: 71
+        line_end: 76
+        excerpt: |
+          public void updateStatus(String orderId, String status) throws FinderException {
+            ManagerLocal manager = mlh.findByPrimaryKey(orderId);
+            manager.setStatus(status);
+          }
+    stack_metadata:
+      framework: EJB 2.x
+      ejb.bean: ProcessManagerEJB
+      ejb.transaction: Required
+  - record_key: ORDER-PROCESSING-WORKFLOW-REQ-0003
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL return the current status for a given order id, and SHALL report a not-found error when the order is not tracked.
+    confidence: medium
+    confidence_basis: One clear place; simple read.
+    risk_class: operational
+    basis: getStatus finds by primary key and returns the status.
+    plain_text: >
+      Other parts of the system can ask where a given order currently stands.
+    technical_note: ProcessManagerEJB.getStatus; FinderException on unknown id.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/processmanager/src/com/sun/j2ee/blueprints/processmanager/ejb/ProcessManagerEJB.java
+        line_start: 79
+        line_end: 84
+        excerpt: |
+          public String getStatus(String orderId) throws FinderException {
+            ManagerLocal manager = mlh.findByPrimaryKey(orderId);
+            return manager.getStatus();
+          }
+    stack_metadata:
+      framework: EJB 2.x
+      ejb.bean: ProcessManagerEJB
+  - record_key: ORDER-PROCESSING-WORKFLOW-REQ-0004
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL list all orders whose status exactly equals a given status string, with each order appearing once.
+    confidence: high
+    confidence_basis: >
+      The query is declared in the descriptor and exposed by the session bean method that calls the finder; two places.
+    risk_class: operational
+    basis: EJB-QL SELECT DISTINCT with equality on status.
+    plain_text: >
+      The system can list every order that is currently at a given status, for example all orders waiting for approval.
+    technical_note: >
+      Finder findOrdersByStatus (EJB-QL, equality, case-sensitive per database collation) exposed via ProcessManagerEJB.getOrdersByStatus returning a raw Collection.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/processmanager/src/ejb-jar.xml
+        line_start: 70
+        line_end: 79
+        excerpt: |
+          <query>
+            <query-method>
+              <method-name>findOrdersByStatus</method-name>
+            ...
+            <ejb-ql>SELECT DISTINCT OBJECT(a) FROM Manager a WHERE a.status = ?1</ejb-ql>
+          </query>
+      - path: legacy-source/app/src/components/processmanager/src/com/sun/j2ee/blueprints/processmanager/ejb/ProcessManagerEJB.java
+        line_start: 87
+        line_end: 91
+        excerpt: |
+          public Collection getOrdersByStatus(String status) throws FinderException {
+              return mlh.findOrdersByStatus(status);
+          }
+    stack_metadata:
+      framework: EJB 2.x
+      ejb.bean: ProcessManagerEJB
+      ejb.transaction: Required
+  - record_key: ORDER-PROCESSING-WORKFLOW-BR-0001
+    kind: business-rule
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL recognise the order statuses PENDING, APPROVED, DENIED, SHIPPED_PART and COMPLETED as the named workflow states of an order.
+    confidence: medium
+    confidence_basis: >
+      One place: a constants class. The tracking record accepts any string so these are naming conventions, not enforced; usage by other modules not seen in this pass.
+    risk_class: operational
+    basis: Constants class OrderStatusNames.
+    plain_text: >
+      An order is Pending, Approved, Denied, Partly shipped or Completed.
+    technical_note: >
+      OrderStatusNames string constants. Not enforced by the entity or session bean.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/processmanager/src/com/sun/j2ee/blueprints/processmanager/ejb/OrderStatusNames.java
+        line_start: 48
+        line_end: 66
+        excerpt: |
+          public static final String PENDING = "PENDING";
+          public  static final String APPROVED = "APPROVED";
+          public  static final String DENIED = "DENIED";
+          public  static final String SHIPPED_PART = "SHIPPED_PART";
+          public  static final String COMPLETED = "COMPLETED";
+    stack_metadata:
+      framework: Java
+  - record_key: ORDER-PROCESSING-WORKFLOW-WF-0001
+    kind: workflow
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL run each workflow transition through a pluggable handler, named by class name at runtime, that is set up and then given the transition information, and SHALL raise a transition error when the handler cannot be instantiated.
+    confidence: medium
+    confidence_basis: >
+      Interface and factory read; TransitionInfo contents and the caller that supplies class names are not in this module, so which transitions exist is unknown.
+    dispute:
+      reason: unresolved-reachability
+      detail: >
+        No caller of TransitionDelegateFactory was found in this module; it may be used by other components or be dead. Search other components for getTransitionDelegate to settle it.
+    risk_class: operational
+    basis: TransitionDelegate interface (setup, doTransition) and factory using Class.forName.
+    plain_text: >
+      Each step an order takes between stages is carried out by a replaceable handler chosen by name.
+    technical_note: >
+      TransitionDelegateFactory.getTransitionDelegate does Class.forName(className).newInstance() and wraps any exception in TransitionException.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/processmanager/src/com/sun/j2ee/blueprints/processmanager/transitions/TransitionDelegateFactory.java
+        line_start: 44
+        line_end: 57
+        excerpt: |
+          public TransitionDelegate getTransitionDelegate(String className) throws TransitionException {
+            TransitionDelegate td = null;
+            try {
+              td = (TransitionDelegate)Class.forName(className).newInstance();
+            } catch(Exception e) {
+              throw new TransitionException(e);
+            }
+            return td;
+          }
+      - path: legacy-source/app/src/components/processmanager/src/com/sun/j2ee/blueprints/processmanager/transitions/TransitionDelegate.java
+        line_start: 41
+        line_end: 49
+        excerpt: |
+          public interface TransitionDelegate {
+             public void setup() throws TransitionException;
+             public void doTransition(TransitionInfo info) throws TransitionException;
+          }
+    stack_metadata:
+      framework: Java reflection
+findings: []
+suspected_defects:
+  - capability_key: order-processing-workflow
+    record_keys: [ORDER-PROCESSING-WORKFLOW-REQ-0002, ORDER-PROCESSING-WORKFLOW-BR-0001]
+    severity: low
+    category: other
+    title: Status updates are not validated against the named states or the prior state
+    description: >
+      updateStatus and create accept any string and any transition; the named states exist only as constants. A typo or out-of-order update is stored silently.
+    traces:
+      - path: legacy-source/app/src/components/processmanager/src/com/sun/j2ee/blueprints/processmanager/ejb/ProcessManagerEJB.java
+        line_start: 71
+        line_end: 76
