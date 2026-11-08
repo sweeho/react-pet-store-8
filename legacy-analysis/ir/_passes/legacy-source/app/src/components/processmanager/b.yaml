@@ -1,0 +1,163 @@
+records:
+  - record_key: ORDER-FULFILMENT-ENTITY-0001
+    kind: entity
+    capability_key: order-fulfilment
+    requirement: >
+      The system SHALL keep exactly one process record per order, holding the order identifier and its current workflow status as a string.
+    confidence: high
+    confidence_basis: >
+      Declared in the entity bean class (abstract accessors) and in the deployment descriptor (cmp-field declarations); two places.
+    risk_class: operational
+    basis: Container-managed entity with fields orderId and status; created from order id and status.
+    plain_text: >
+      Each order has one tracking record that holds the order number and where the order currently stands in its processing.
+    technical_note: >
+      ManagerEJB is a CMP 2.x entity; ejbCreate sets orderId and status and returns null (container-assigned key). Primary key field per ejb-jar.xml.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/processmanager/src/com/sun/j2ee/blueprints/processmanager/manager/ejb/ManagerEJB.java
+        line_start: 52
+        line_end: 66
+        excerpt: |
+          public abstract String getOrderId();
+          public abstract void setOrderId(String orderId);
+          public abstract String getStatus();
+          public abstract void setStatus(String status);
+          public String ejbCreate(String orderId, String status) throws CreateException {
+              setOrderId(orderId);
+              setStatus(status);
+    stack_metadata:
+      framework: EJB 2.x CMP
+      ejb.bean: ManagerEJB
+      ejb.transaction: Required
+  - record_key: ORDER-FULFILMENT-REQ-0001
+    kind: requirement
+    capability_key: order-fulfilment
+    requirement: >
+      The system SHALL allow creating a process record for an order with an initial status, reading the status of an order, and changing the status of an order to a caller-supplied value, failing when the order record does not exist.
+    confidence: high
+    confidence_basis: >
+      Session facade methods plus transaction declarations in the descriptor for each. Whether callers constrain values is outside this module.
+    risk_class: operational
+    basis: ProcessManagerEJB delegates create/find/setStatus to the Manager entity.
+    plain_text: >
+      Other parts of the system can start tracking an order, look up its status, and move it to a new status. Asking about an unknown order is an error.
+    technical_note: >
+      createManager -> mlh.create; updateStatus/getStatus -> findByPrimaryKey (FinderException if absent). No validation of status value or of legal transitions here. All methods have trans-attribute Required.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/processmanager/src/com/sun/j2ee/blueprints/processmanager/ejb/ProcessManagerEJB.java
+        line_start: 66
+        line_end: 91
+        excerpt: |
+          public void createManager(String orderId, String status) throws CreateException {
+            ManagerLocal manager = mlh.create(orderId, status);
+          public void updateStatus(String orderId, String status) throws FinderException {
+            ManagerLocal manager = mlh.findByPrimaryKey(orderId);
+            manager.setStatus(status);
+          public String getStatus(String orderId) throws FinderException {
+    stack_metadata:
+      framework: EJB 2.x
+      ejb.bean: ProcessManagerEJB
+      ejb.transaction: Required
+  - record_key: ORDER-FULFILMENT-REQ-0002
+    kind: requirement
+    capability_key: order-fulfilment
+    requirement: >
+      The system SHALL list the orders whose current status equals a given status, without duplicates.
+    confidence: high
+    confidence_basis: >
+      EJB-QL finder in descriptor plus session method calling it; runbook reports stuck PENDING/APPROVED orders.
+    risk_class: operational
+    basis: findOrdersByStatus query.
+    plain_text: >
+      The system can list all orders currently at a given status, such as all orders waiting for approval.
+    technical_note: >
+      EJB-QL "SELECT DISTINCT OBJECT(a) FROM Manager a WHERE a.status = ?1"; exact string match.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/processmanager/src/ejb-jar.xml
+        line_start: 70
+        line_end: 79
+        excerpt: |
+          <method-name>findOrdersByStatus</method-name>
+          <ejb-ql>SELECT DISTINCT OBJECT(a) FROM Manager a WHERE a.status = ?1</ejb-ql>
+      - path: legacy-source/app/src/components/processmanager/src/com/sun/j2ee/blueprints/processmanager/ejb/ProcessManagerEJB.java
+        line_start: 89
+        line_end: 91
+        excerpt: |
+          public Collection getOrdersByStatus(String status) throws FinderException {
+              return mlh.findOrdersByStatus(status);
+    stack_metadata:
+      framework: EJB 2.x CMP
+      ejb.bean: ProcessManagerEJB
+      db.object: Manager entity
+  - record_key: ORDER-FULFILMENT-BR-0001
+    kind: business-rule
+    capability_key: order-fulfilment
+    requirement: >
+      The system SHALL recognise the order statuses PENDING, APPROVED, DENIED, SHIPPED_PART and COMPLETED.
+    confidence: medium
+    confidence_basis: >
+      Constants in one class; documents list four statuses (no SHIPPED_PART), so a use of SHIPPED_PART is not confirmed here.
+    dispute:
+      reason: contradicts-docs
+      detail: >
+        Code defines SHIPPED_PART (partially completed); user guide section 5 and runbook list only PENDING, APPROVED, DENIED, COMPLETED. Settle by checking whether any other component sets SHIPPED_PART.
+    risk_class: operational
+    basis: OrderStatusNames constants; user guide status table.
+    plain_text: >
+      An order is pending, approved, denied, partly shipped or completed. Printed guides mention only four of these.
+    technical_note: >
+      Plain String constants; the process manager does not enforce them on updateStatus.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/processmanager/src/com/sun/j2ee/blueprints/processmanager/ejb/OrderStatusNames.java
+        line_start: 50
+        line_end: 65
+        excerpt: |
+          public static final String PENDING = "PENDING";
+          public static final String APPROVED = "APPROVED";
+          public static final String DENIED = "DENIED";
+          public static final String SHIPPED_PART = "SHIPPED_PART";
+          public static final String COMPLETED = "COMPLETED";
+      - path: legacy-analysis/sources/pdf/petstore-user-guide/extracted.md
+        anchor: p1
+        excerpt: |
+          PENDINGWaiting for the administrator to approve or deny
+          APPROVEDApproved and sent to the Supplier, not yet fully invoiced
+          DENIEDRefused by the administrator
+          COMPLETEDAll lines shipped and invoiced
+    stack_metadata:
+      framework: EJB 2.x
+  - record_key: ORDER-FULFILMENT-WF-0001
+    kind: workflow
+    capability_key: order-fulfilment
+    requirement: >
+      The system SHALL instantiate a configurable transition handler by class name for a workflow step, and fail with a transition error when the class cannot be loaded or created.
+    confidence: low
+    confidence_basis: >
+      Only the factory is read; no caller in this module, so reachability and which handlers exist are unknown.
+    dispute:
+      reason: unresolved-reachability
+      detail: >
+        No caller of TransitionDelegateFactory in this module. Search the OPC application for users of it to settle whether it runs.
+    risk_class: operational
+    basis: Reflective instantiation of TransitionDelegate implementations; TransitionInfo carries an XML message or batch.
+    plain_text: >
+      Each processing step is performed by a pluggable handler chosen by name; if the handler cannot be set up, the step fails.
+    technical_note: >
+      Class.forName(className).newInstance() wrapped in TransitionException.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/processmanager/src/com/sun/j2ee/blueprints/processmanager/transitions/TransitionDelegateFactory.java
+        line_start: 47
+        line_end: 55
+        excerpt: |
+          td = (TransitionDelegate)Class.forName(className).newInstance();
+          } catch(Exception e) {
+            throw new TransitionException(e);
+    stack_metadata:
+      framework: EJB 2.x
+findings: []
+suspected_defects: []
