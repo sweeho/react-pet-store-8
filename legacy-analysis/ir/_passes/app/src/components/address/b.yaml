@@ -1,0 +1,174 @@
+records:
+  - record_key: CUSTOMER-ACCOUNTS-ENTITY-0001
+    kind: entity
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL represent a postal address as six text fields: street line 1, street line 2, city, state, zip code and country, persisted as a container-managed entity.
+    confidence: high
+    confidence_basis: >
+      The six fields appear in the entity class, the value object and the deployment descriptor's cmp-field list. No DDL for the table was in this module, so column size and nullability are not visible.
+    risk_class: operational
+    basis: Six CMP fields declared in the descriptor and accessed in the bean; same six in the value object.
+    plain_text: >
+      An address is made of two street lines, a city, a state, a zip code and a country.
+    technical_note: >
+      AddressEJB is an abstract CMP 2.x entity with getters and setters for the six fields; ejb-jar.xml lists them as cmp-field. No length or not-null validation is enforced in this module.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/address/src/ejb-jar.xml
+        line_start: 57
+        line_end: 80
+        excerpt: |
+          <cmp-field>
+            <description>no description</description>
+            <field-name>zipCode</field-name>
+          </cmp-field>
+      - path: legacy-source/app/src/components/address/src/com/sun/j2ee/blueprints/address/ejb/AddressEJB.java
+        line_start: 53
+        line_end: 69
+        excerpt: |
+          public abstract String getStreetName1();
+          public abstract void setStreetName1(String streetName1);
+          public abstract String getStreetName2();
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: AddressEJB
+      db.object: Address (abstract schema)
+  - record_key: CUSTOMER-ACCOUNTS-REQ-0002
+    kind: requirement
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL allow an address to be created from six individual values, from another address object, or empty, and SHALL store the supplied values as given without validation or normalisation.
+    confidence: high
+    confidence_basis: >
+      Three create variants are visible in the bean and listed in the descriptor; the absence of validation is read from the code, which is a negative claim limited to this module.
+    risk_class: operational
+    basis: ejbCreate overloads copy fields straight into CMP fields.
+    plain_text: >
+      An address can be saved with whatever values are given; nothing is checked or changed, and street line 2 and country may be blank.
+    technical_note: >
+      ejbCreate(6 Strings), ejbCreate(Address) and ejbCreate() with matching empty ejbPostCreate. Validation, if any, is elsewhere (callers).
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/address/src/com/sun/j2ee/blueprints/address/ejb/AddressEJB.java
+        line_start: 73
+        line_end: 103
+        excerpt: |
+          public Object ejbCreate(String streetName1, String streetName2, String city,
+                                  String state, String zipCode, String country) throws CreateException {
+          ...
+          public Object ejbCreate(Address address) throws CreateException {
+          ...
+          public Object ejbCreate() throws CreateException {
+            return null;
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: AddressEJB
+  - record_key: CUSTOMER-ACCOUNTS-REQ-0003
+    kind: requirement
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL allow a stored address to be read back as a complete six-field address object and SHALL allow removal of an address without any side effect.
+    confidence: medium
+    confidence_basis: >
+      One clear place (getData and an empty ejbRemove); descriptor permissions corroborate access but do not state the rule.
+    risk_class: operational
+    basis: getData copies every field; ejbRemove is empty.
+    plain_text: >
+      A saved address can be retrieved in full and deleted without other effects.
+    technical_note: >
+      getData() builds an Address value object. ejbRemove is a no-op. ejb-jar.xml marks Local and LocalHome methods as unchecked, so any caller in the container may use them.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/address/src/com/sun/j2ee/blueprints/address/ejb/AddressEJB.java
+        line_start: 105
+        line_end: 126
+        excerpt: |
+          public Address getData() {
+            Address address = new Address();
+            ...
+          public void ejbRemove() throws RemoveException { }
+      - path: legacy-source/app/src/components/address/src/ejb-jar.xml
+        line_start: 88
+        line_end: 92
+        excerpt: |
+          <method-permission>
+            <unchecked />
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: AddressEJB
+      ejb.transaction: not declared in this descriptor
+  - record_key: CUSTOMER-ACCOUNTS-REQ-0004
+    kind: integration
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL exchange an address as an XML Address element containing, in order, one or two street name elements, city, state, zip code and country; the second street element SHALL be omitted when street line 2 is null or empty.
+    confidence: high
+    confidence_basis: >
+      Serialisation, parsing and the DTD all describe the same element order and the optional second street.
+    risk_class: operational
+    basis: toDOM, fromDOM and Address.dtd.
+    plain_text: >
+      When an address is passed to another system as a document, it lists street, optional second street, city, state, zip code and country in that order.
+    technical_note: >
+      Address.toDOM / fromDOM with DTD public id "-//Sun Microsystems, Inc. - J2EE Blueprints Group//DTD Address 1.1//EN". Both street lines use the same tag StreetName; position distinguishes them.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/address/src/com/sun/j2ee/blueprints/address/ejb/Address.java
+        line_start: 144
+        line_end: 156
+        excerpt: |
+          public Node toDOM(Document document) {
+            Element root = document.createElement(XML_ADDRESS);
+            XMLDocumentUtils.appendChild(document, root, XML_STREET_NAME, streetName1);
+            if (streetName2 != null && !streetName2.equals("")) {
+      - path: legacy-source/app/src/components/address/src/com/sun/j2ee/blueprints/address/rsrc/schemas/Address.dtd
+        line_start: 38
+        line_end: 43
+        excerpt: |
+          <!ELEMENT Address (StreetName, StreetName?, City, State, ZipCode, Country?)>
+    stack_metadata:
+      framework: XML DOM / DTD
+  - record_key: CUSTOMER-ACCOUNTS-REQ-0005
+    kind: business-rule
+    capability_key: customer-accounts
+    requirement: >
+      GIVEN an incoming Address XML document, WHEN the root element is not named Address, or a required child (street, city, state, zip code, country) is missing or out of order, THEN the system SHALL reject it with an XML document error.
+    confidence: medium
+    confidence_basis: >
+      Root-name check is explicit; required-child behaviour depends on the meaning of the boolean argument of XMLDocumentUtils, which is outside this module and was inferred (false = not optional), so not graded higher.
+    risk_class: operational
+    basis: fromDOM throws XMLDocumentException when root is not Address.
+    plain_text: >
+      An address document that is not shaped as expected is refused.
+    technical_note: >
+      fromDOM throws "Address element expected." on wrong root; child lookups use getFirstChild/getNextSibling with flag false for mandatory and true for optional StreetName.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/address/src/com/sun/j2ee/blueprints/address/ejb/Address.java
+        line_start: 158
+        line_end: 180
+        excerpt: |
+          child = XMLDocumentUtils.getNextSibling(child, XML_COUNTRY, false);
+          address.country = XMLDocumentUtils.getContentAsString(child, false);
+          return address;
+          }
+          throw new XMLDocumentException(XML_ADDRESS + " element expected.");
+    stack_metadata:
+      framework: XML DOM
+suspected_defects:
+  - capability_key: customer-accounts
+    record_keys: [CUSTOMER-ACCOUNTS-REQ-0004, CUSTOMER-ACCOUNTS-REQ-0005]
+    severity: low
+    category: other
+    title: Country is optional in the DTD but written always and read as mandatory
+    description: >
+      The DTD declares Country optional, toDOM always writes a Country element, and fromDOM looks Country up as a required sibling (flag false), so a document valid under the DTD without Country appears to be refused. Depends on the semantics of the utility flag, not visible here.
+    traces:
+      - path: legacy-source/app/src/components/address/src/com/sun/j2ee/blueprints/address/rsrc/schemas/Address.dtd
+        line_start: 38
+        line_end: 38
+      - path: legacy-source/app/src/components/address/src/com/sun/j2ee/blueprints/address/ejb/Address.java
+        line_start: 175
+        line_end: 176
+findings: []
