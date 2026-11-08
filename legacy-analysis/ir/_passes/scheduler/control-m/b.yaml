@@ -1,0 +1,399 @@
+{
+ "records": [
+  {
+   "record_key": "BATCH-REQ-0001",
+   "kind": "business-rule",
+   "capability_key": "batch-operations",
+   "requirement": "The system SHALL run an online backup of the pet store database every day at 01:00, retaining 7 days of backups, as a critical-priority job retried at most 2 times.",
+   "plain_text": "The store database is backed up every night at 1 AM and the last 7 days of backups are kept.",
+   "confidence": "medium",
+   "confidence_basis": "One job definition with schedule and a description; the 7-day retention is only in the description text, the script ps_db_backup.sh is not in this module.",
+   "risk_class": "operational",
+   "basis": "Job PS_DB_BACKUP: TIMEFROM 0100, WEEKDAYS ALL, CRITICAL=1, MAXRERUN=2.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 15,
+     "line_end": 21,
+     "excerpt": "<JOB JOBISN=\"1\" ... JOBNAME=\"PS_DB_BACKUP\"\n DESCRIPTION=\"Online backup of PetStoreDB, keep 7 days\"\n TIMEFROM=\"0100\" WEEKDAYS=\"ALL\" DAYSCAL=\"PS_CAL\" MAXRERUN=\"2\""
+    }
+   ],
+   "technical_note": "Control-M job PS_DB_BACKUP, ps_db_backup.sh as tomcat on ps-app01. DAYSCAL=PS_CAL references a calendar not in this export.",
+   "stack_metadata": {
+    "framework": "Control-M",
+    "batch.trigger": "Control-M DEFTABLE"
+   },
+   "interface": false
+  },
+  {
+   "record_key": "BATCH-REQ-0002",
+   "kind": "business-rule",
+   "capability_key": "batch-operations",
+   "requirement": "WHEN the database backup job ends not-OK, the system SHALL email ps-ops with urgent urgency stating that the order extract is held.",
+   "plain_text": "If the nightly backup fails, the operations team is urgently emailed and told the order extract will not run.",
+   "confidence": "high",
+   "confidence_basis": "Notification in ON/DOMAIL plus the extract's input condition that actually enforces the hold (two places).",
+   "risk_class": "operational",
+   "basis": "ON CODE=NOTOK sends DOMAIL; extract requires PS_DB_BACKUP-OK.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 23,
+     "line_end": 25,
+     "excerpt": "<ON STMT=\"*\" CODE=\"NOTOK\">\n <DOMAIL URGENCY=\"U\" DEST=\"ps-ops@example.invalid\" SUBJECT=\"PS_DB_BACKUP failed\" MESSAGE=\"Petstore DB backup failed, order extract is held\" />"
+    }
+   ],
+   "technical_note": "Control-M ON/DOMAIL.",
+   "stack_metadata": {
+    "framework": "Control-M",
+    "batch.trigger": "Control-M DEFTABLE"
+   },
+   "interface": true
+  },
+  {
+   "record_key": "BATCH-REQ-0003",
+   "kind": "business-rule",
+   "capability_key": "batch-operations",
+   "requirement": "The system SHALL export the previous day's purchase orders to a file orders_YYYYMMDD.csv for Finance, daily at 01:30, only after the database backup of the same order date has succeeded, retried at most once.",
+   "plain_text": "Every night at 1:30 AM, once the backup has succeeded, yesterday's orders are exported to a dated spreadsheet file for Finance.",
+   "confidence": "high",
+   "confidence_basis": "Description, schedule and input condition on backup success all agree.",
+   "risk_class": "financial",
+   "basis": "Job PS_ORDER_EXTRACT with INCOND PS_DB_BACKUP-OK and TIMEFROM 0130.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 28,
+     "line_end": 35,
+     "excerpt": "JOBNAME=\"PS_ORDER_EXTRACT\"\n DESCRIPTION=\"Export yesterday purchase orders to orders_YYYYMMDD.csv for Finance\"\n TIMEFROM=\"0130\" WEEKDAYS=\"ALL\" MAXRERUN=\"1\"\n <INCOND NAME=\"PS_DB_BACKUP-OK\" ODATE=\"ODAT\" AND_OR=\"A\" />"
+    }
+   ],
+   "technical_note": "ps_order_extract.sh. The backup-OK condition is deleted (SIGN -) once the extract starts, so a rerun needs the backup condition re-added.",
+   "stack_metadata": {
+    "framework": "Control-M",
+    "batch.trigger": "Control-M DEFTABLE"
+   },
+   "interface": true
+  },
+  {
+   "record_key": "BATCH-REQ-0004",
+   "kind": "business-rule",
+   "capability_key": "batch-operations",
+   "requirement": "WHEN the order extract ends not-OK, the system SHALL email ps-finance with routine urgency that the extract was not produced.",
+   "plain_text": "If the Finance order export fails, Finance gets an email saying the file was not produced.",
+   "confidence": "medium",
+   "confidence_basis": "One clear ON/DOMAIL element.",
+   "risk_class": "financial",
+   "basis": "ON CODE=NOTOK DOMAIL to ps-finance.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 38,
+     "line_end": 40,
+     "excerpt": "<ON STMT=\"*\" CODE=\"NOTOK\">\n <DOMAIL URGENCY=\"R\" DEST=\"ps-finance@example.invalid\" SUBJECT=\"PS_ORDER_EXTRACT failed\""
+    }
+   ],
+   "technical_note": "Control-M ON/DOMAIL.",
+   "stack_metadata": {
+    "framework": "Control-M",
+    "batch.trigger": "Control-M DEFTABLE"
+   },
+   "interface": true
+  },
+  {
+   "record_key": "BATCH-REQ-0005",
+   "kind": "business-rule",
+   "capability_key": "batch-operations",
+   "requirement": "The system SHALL run an order aging report daily at 01:45 after a successful order extract, listing orders stuck in PENDING or APPROVED status for more than 24 hours.",
+   "plain_text": "Each night a report lists orders that have waited more than a day without being completed.",
+   "confidence": "medium",
+   "confidence_basis": "Described only in the description; the 24-hour and status logic is in a script outside this module.",
+   "risk_class": "operational",
+   "basis": "Job PS_ORDER_AGING_REPORT with INCOND PS_ORDER_EXTRACT-OK.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 43,
+     "line_end": 51,
+     "excerpt": "DESCRIPTION=\"Orders stuck PENDING or APPROVED for more than 24 hours\"\n TIMEFROM=\"0145\" WEEKDAYS=\"ALL\"\n <INCOND NAME=\"PS_ORDER_EXTRACT-OK\" ODATE=\"ODAT\" AND_OR=\"A\" />"
+    }
+   ],
+   "technical_note": "ps_order_aging_report.sh.",
+   "stack_metadata": {
+    "framework": "Control-M",
+    "batch.trigger": "Control-M DEFTABLE"
+   },
+   "interface": false
+  },
+  {
+   "record_key": "BATCH-REQ-0006",
+   "kind": "business-rule",
+   "capability_key": "batch-operations",
+   "requirement": "WHEN the aging report ends with completion status 4, the system SHALL email ps-ops with routine urgency pointing to the order_aging_YYYYMMDD.txt report.",
+   "plain_text": "When stuck orders are found, operations is emailed with the location of the report.",
+   "confidence": "medium",
+   "confidence_basis": "Single ON/DOMAIL; meaning of status 4 as 'stuck orders found' is inferred from subject text.",
+   "risk_class": "operational",
+   "basis": "ON CODE=COMPSTAT=4.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 52,
+     "line_end": 54,
+     "excerpt": "<ON STMT=\"*\" CODE=\"COMPSTAT=4\">\n <DOMAIL URGENCY=\"R\" DEST=\"ps-ops@example.invalid\" SUBJECT=\"Petstore stuck orders found\""
+    }
+   ],
+   "technical_note": "Control-M ON/DOMAIL; file path /var/petstore/extract.",
+   "stack_metadata": {
+    "framework": "Control-M",
+    "batch.trigger": "Control-M DEFTABLE"
+   },
+   "interface": true
+  },
+  {
+   "record_key": "BATCH-REQ-0007",
+   "kind": "business-rule",
+   "capability_key": "batch-operations",
+   "requirement": "The system SHALL run an inventory report daily at 01:50 after a successful order extract, listing supplier items with stock below 500 units.",
+   "plain_text": "Each night a report lists supplier items running low, fewer than 500 units in stock.",
+   "confidence": "medium",
+   "confidence_basis": "Threshold 500 only in the description text; logic is in an external script.",
+   "risk_class": "operational",
+   "basis": "Job PS_INVENTORY_REPORT.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 57,
+     "line_end": 66,
+     "excerpt": "DESCRIPTION=\"Supplier items with stock below 500 units\"\n TASKTYPE=\"Command\"\n TIMEFROM=\"0150\" WEEKDAYS=\"ALL\"\n <INCOND NAME=\"PS_ORDER_EXTRACT-OK\""
+    }
+   ],
+   "technical_note": "ps_inventory_report.sh run as a Command. No failure handler or rerun is defined.",
+   "stack_metadata": {
+    "framework": "Control-M",
+    "batch.trigger": "Control-M DEFTABLE"
+   },
+   "interface": false
+  },
+  {
+   "record_key": "BATCH-REQ-0008",
+   "kind": "business-rule",
+   "capability_key": "batch-operations",
+   "requirement": "The system SHALL purge orders in COMPLETED or DENIED status older than 180 days every Sunday at 02:00, after a successful order extract.",
+   "plain_text": "Every Sunday night, finished or denied orders older than about six months are deleted, after they have been exported.",
+   "confidence": "medium",
+   "confidence_basis": "Threshold and statuses only in the description; schedule and dependency are in attributes.",
+   "risk_class": "regulated",
+   "basis": "Job PS_ORDER_PURGE WEEKDAYS=0, INCOND extract.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 68,
+     "line_end": 77,
+     "excerpt": "DESCRIPTION=\"Delete COMPLETED and DENIED orders older than 180 days (Sundays)\"\n TIMEFROM=\"0200\" WEEKDAYS=\"0\"\n <INCOND NAME=\"PS_ORDER_EXTRACT-OK\""
+    }
+   ],
+   "technical_note": "ps_order_purge.sh. Destructive; no failure notification or rerun configured.",
+   "stack_metadata": {
+    "framework": "Control-M",
+    "batch.trigger": "Control-M DEFTABLE"
+   },
+   "interface": false
+  },
+  {
+   "record_key": "BATCH-REQ-0009",
+   "kind": "business-rule",
+   "capability_key": "batch-operations",
+   "requirement": "The system SHALL run a catalog integrity check daily at 06:00 as a critical job, loading the catalog first when it is empty.",
+   "plain_text": "Before the store opens at 6 AM, the product catalog is checked and loaded if empty.",
+   "confidence": "medium",
+   "confidence_basis": "Description and schedule; check logic is in an external script.",
+   "risk_class": "operational",
+   "basis": "Job PS_CATALOG_CHECK, CRITICAL=1, no input condition.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 79,
+     "line_end": 86,
+     "excerpt": "DESCRIPTION=\"Catalog integrity check before the store opens; first load when empty\"\n TIMEFROM=\"0600\" WEEKDAYS=\"ALL\""
+    }
+   ],
+   "technical_note": "ps_catalog_check.sh.",
+   "stack_metadata": {
+    "framework": "Control-M",
+    "batch.trigger": "Control-M DEFTABLE"
+   },
+   "interface": false
+  },
+  {
+   "record_key": "BATCH-REQ-0010",
+   "kind": "business-rule",
+   "capability_key": "batch-operations",
+   "requirement": "WHEN the catalog check ends with completion status 4, the system SHALL email ps-catalog with urgent urgency pointing to the catalog check log.",
+   "plain_text": "If the catalog check finds a problem, the catalog team is urgently emailed.",
+   "confidence": "medium",
+   "confidence_basis": "Single ON/DOMAIL.",
+   "risk_class": "operational",
+   "basis": "ON CODE=COMPSTAT=4.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 87,
+     "line_end": 89,
+     "excerpt": "<ON STMT=\"*\" CODE=\"COMPSTAT=4\">\n <DOMAIL URGENCY=\"U\" DEST=\"ps-catalog@example.invalid\""
+    }
+   ],
+   "technical_note": "Control-M ON/DOMAIL.",
+   "stack_metadata": {
+    "framework": "Control-M",
+    "batch.trigger": "Control-M DEFTABLE"
+   },
+   "interface": true
+  },
+  {
+   "record_key": "BATCH-REQ-0011",
+   "kind": "business-rule",
+   "capability_key": "batch-operations",
+   "requirement": "The system SHALL run an HTTP health check of the storefront, order processing, supplier and admin web modules every 10 minutes from 00:00 to 23:59, every day.",
+   "plain_text": "Every 10 minutes around the clock, the store's web parts are checked to confirm they are up.",
+   "confidence": "high",
+   "confidence_basis": "Description, cyclic interval and window attributes agree.",
+   "risk_class": "operational",
+   "basis": "Job PS_HEALTH_CHECK CYCLIC Interval 00010M.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 96,
+     "line_end": 101,
+     "excerpt": "DESCRIPTION=\"HTTP check of the storefront, OPC, supplier and admin web modules\"\n TIMEFROM=\"0000\" WEEKDAYS=\"ALL\" TIMETO=\"2359\" CYCLIC=\"1\" CYCLIC_TYPE=\"Interval\" INTERVAL=\"00010M\""
+    }
+   ],
+   "technical_note": "Folder PS_PETSTORE_CYCLIC; ps_health_check.sh.",
+   "stack_metadata": {
+    "framework": "Control-M",
+    "batch.trigger": "Control-M DEFTABLE"
+   },
+   "interface": false
+  },
+  {
+   "record_key": "BATCH-REQ-0012",
+   "kind": "business-rule",
+   "capability_key": "batch-operations",
+   "requirement": "WHEN a health check ends not-OK, the system SHALL email ps-ops with routine urgency that a web module is down.",
+   "plain_text": "If a web part is down, operations is emailed.",
+   "confidence": "medium",
+   "confidence_basis": "Single ON/DOMAIL; with a 10-minute cycle this repeats on every failing run.",
+   "risk_class": "operational",
+   "basis": "ON CODE=NOTOK.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 103,
+     "line_end": 105,
+     "excerpt": "<ON STMT=\"*\" CODE=\"NOTOK\">\n <DOMAIL URGENCY=\"R\" DEST=\"ps-ops@example.invalid\" SUBJECT=\"Petstore web module down\""
+    }
+   ],
+   "technical_note": "Control-M ON/DOMAIL.",
+   "stack_metadata": {
+    "framework": "Control-M",
+    "batch.trigger": "Control-M DEFTABLE"
+   },
+   "interface": true
+  },
+  {
+   "record_key": "BATCH-REQ-0013",
+   "kind": "business-rule",
+   "capability_key": "batch-operations",
+   "requirement": "The system SHALL sequence the nightly chain so that backup precedes the order extract, and the aging report, inventory report and purge each run only after the order extract has succeeded.",
+   "plain_text": "The nightly jobs run in order: backup, then export, then the reports and cleanup.",
+   "confidence": "high",
+   "confidence_basis": "Enforced by input/output conditions and by staggered start times (two mechanisms).",
+   "risk_class": "operational",
+   "basis": "INCOND/OUTCOND names chain jobs.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 22,
+     "line_end": 22,
+     "excerpt": "<OUTCOND NAME=\"PS_DB_BACKUP-OK\" ODATE=\"ODAT\" SIGN=\"+\" />"
+    },
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 35,
+     "line_end": 37,
+     "excerpt": "<INCOND NAME=\"PS_DB_BACKUP-OK\" ODATE=\"ODAT\" AND_OR=\"A\" />\n <OUTCOND NAME=\"PS_DB_BACKUP-OK\" ODATE=\"ODAT\" SIGN=\"-\" />\n <OUTCOND NAME=\"PS_ORDER_EXTRACT-OK\" ODATE=\"ODAT\" SIGN=\"+\" />"
+    }
+   ],
+   "technical_note": "Conditions are per order date (ODAT).",
+   "stack_metadata": {
+    "framework": "Control-M",
+    "batch.trigger": "Control-M DEFTABLE"
+   },
+   "interface": false
+  }
+ ],
+ "findings": [
+  {
+   "kind": "ambiguity",
+   "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+   "description": "The calendar PS_CAL (backup job) and the scripts under /opt/petstore/batch are not part of this module; retention, purge logic, report thresholds and the meaning of completion status 4 cannot be confirmed here."
+  }
+ ],
+ "suspected_defects": [
+  {
+   "capability_key": "batch-operations",
+   "record_keys": [
+    "BATCH-REQ-0008"
+   ],
+   "severity": "medium",
+   "category": "other",
+   "title": "Purge deletes orders with no failure alert",
+   "description": "The purge job has no ON/DOMAIL handler and no rerun, so a failed or partial purge of orders goes unnoticed.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 68,
+     "line_end": 77,
+     "excerpt": "JOBNAME=\"PS_ORDER_PURGE\" ... WEEKDAYS=\"0\""
+    }
+   ]
+  },
+  {
+   "capability_key": "batch-operations",
+   "record_keys": [
+    "BATCH-REQ-0007"
+   ],
+   "severity": "low",
+   "category": "error-swallowed",
+   "title": "Inventory report failure is not notified",
+   "description": "The inventory report defines no failure handler, unlike the other jobs.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 57,
+     "line_end": 66,
+     "excerpt": "JOBNAME=\"PS_INVENTORY_REPORT\""
+    }
+   ]
+  },
+  {
+   "capability_key": "batch-operations",
+   "record_keys": [
+    "BATCH-REQ-0003",
+    "BATCH-REQ-0013"
+   ],
+   "severity": "low",
+   "category": "other",
+   "title": "Backup condition is removed once the extract starts",
+   "description": "The extract deletes the backup-OK condition, so a manual rerun of the extract is held until the condition is added again.",
+   "traces": [
+    {
+     "path": "legacy-source/scheduler/control-m/PS_PETSTORE.xml",
+     "line_start": 35,
+     "line_end": 37,
+     "excerpt": "<OUTCOND NAME=\"PS_DB_BACKUP-OK\" ODATE=\"ODAT\" SIGN=\"-\" />"
+    }
+   ]
+  }
+ ]
+}
