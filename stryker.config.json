@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "vitest",
+  "mutate": [
+    "src/**/*.{ts,tsx}",
+    "routes/**/*.ts",
+    "middleware/**/*.ts",
+    "db/**/*.ts",
+    "!**/*.test.{ts,tsx}",
+    "!**/*.d.ts",
+    "!src/test/**"
+  ],
+  "reporters": ["json", "clear-text"],
+  "jsonReporter": { "fileName": "reports/mutation/mutation.json" },
+  "tempDirName": ".stryker-tmp",
+  "cleanTempDir": true
+}
