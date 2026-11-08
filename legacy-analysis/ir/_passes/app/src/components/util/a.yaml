@@ -1,0 +1,40 @@
+records:
+  - record_key: OPW-REQ-0001
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL NOT emit diagnostic trace output (messages or exception details) at runtime,
+      because the shared debug helper is compiled with its debugging switch permanently off.
+    confidence: medium
+    confidence_basis: >
+      One clear place: a compile-time constant set to false guards every print path. No test, config or
+      comment confirms intent, and the constant is not externally configurable.
+    risk_class: operational
+    basis: >
+      The tracer utility is a cross-cutting helper used by catalog, web controller and i18n code. It fits no
+      listed capability; filed under the closest (order-processing-workflow) as a cross-module concern.
+    plain_text: >
+      The application does not write diagnostic trace messages while running; turning them on requires
+      rebuilding the software.
+    technical_note: >
+      Debug.debuggingOn is a public static final boolean = false; print/println/print(Throwable) all check it.
+      When on, println prefixes ">>" and writes to stderr, while print(Throwable) writes to stdout and calls printStackTrace.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/util/tracer/src/com/sun/j2ee/blueprints/util/tracer/Debug.java
+        line_start: 44
+        line_end: 79
+        excerpt: |
+          public final class Debug {
+
+              public static final boolean debuggingOn = false;
+
+              public static void print(String msg) {
+                  if (debuggingOn) {
+                      System.err.print(msg);
+                  }
+              }
+    stack_metadata:
+      framework: plain-java
+findings: []
+suspected_defects: []
