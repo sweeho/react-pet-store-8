@@ -1,0 +1,195 @@
+records:
+  - record_key: SUPPLIER-ENTITY-0001
+    kind: entity
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL persist each order line item with category id, product id, item id, line number, quantity, unit price and quantity shipped.
+    confidence: high
+    confidence_basis: >
+      Declared as container-managed fields in the deployment descriptor and as abstract accessors in the bean class (two places). No DDL seen in this module, and no field-level constraints.
+    risk_class: financial
+    basis: Seven CMP fields declared; bean class has matching accessors.
+    plain_text: >
+      Each line of an order records the product category, product, item, line number, quantity ordered, unit price and how many units have shipped.
+    technical_note: >
+      LineItemEJB is a CMP 2.x entity bean (abstract schema LineItem). Primary key class is java.lang.Object and ejbCreate returns null, so there is no declared key. Unit price is a float, not a decimal.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/lineitem/src/ejb-jar.xml
+        line_start: 57
+        line_end: 78
+        excerpt: |
+          <abstract-schema-name>LineItem</abstract-schema-name>
+          <cmp-field>
+            <field-name>categoryId</field-name>
+          </cmp-field>
+          <cmp-field>
+            <field-name>productId</field-name>
+          </cmp-field>
+      - path: legacy-source/app/src/components/lineitem/src/com/sun/j2ee/blueprints/lineitem/ejb/LineItemEJB.java
+        line_start: 106
+        line_end: 136
+        excerpt: |
+          public abstract int getQuantity();
+          public abstract float getUnitPrice();
+          public abstract int getQuantityShipped();
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: LineItemEJB
+      ejb.transaction: Required
+  - record_key: SUPPLIER-REQ-0001
+    kind: requirement
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL create a line item either from explicit values (category, product, item, line number, quantity, unit price, quantity shipped) or by copying an existing line item's values, in both cases without validating any value.
+    confidence: medium
+    confidence_basis: One clear place (the two create methods); absence of validation is inferred from reading, with no tests present.
+    risk_class: operational
+    basis: Both ejbCreate variants only assign fields.
+    plain_text: >
+      A line item can be created from scratch or copied from another line item. Nothing checks that quantity or price are sensible.
+    technical_note: >
+      Two ejbCreate overloads; no range, null or non-negative checks.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/lineitem/src/com/sun/j2ee/blueprints/lineitem/ejb/LineItemEJB.java
+        line_start: 141
+        line_end: 167
+        excerpt: |
+          public Object ejbCreate(String catId, String prodId, String itemId,
+                                  String lineNo, int qty, float price, int qtyShipped)
+          ...
+          public Object ejbCreate(LineItem lineItem, int qty) throws CreateException {
+    stack_metadata:
+      ejb.bean: LineItemEJB
+      ejb.transaction: Required
+  - record_key: SUPPLIER-RULE-0001
+    kind: business-rule
+    capability_key: supplier-fulfilment
+    requirement: >
+      GIVEN a line item is created by copying another line item with an integer argument, WHEN the new line item is stored, THEN the system SHALL set its quantity shipped to that argument and its quantity ordered to the source line item's quantity.
+    confidence: medium
+    confidence_basis: One clear place; the parameter is named qty, so its meaning as shipped quantity is inferred from the setter it feeds.
+    risk_class: financial
+    basis: ejbCreate(LineItem, int) calls setQuantityShipped(qty).
+    plain_text: >
+      When a line is copied, the second number supplied is recorded as the shipped quantity, not the ordered quantity.
+    technical_note: >
+      The parameter is named qty but feeds setQuantityShipped.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/lineitem/src/com/sun/j2ee/blueprints/lineitem/ejb/LineItemEJB.java
+        line_start: 158
+        line_end: 167
+        excerpt: |
+          setQuantity(lineItem.getQuantity());
+          setUnitPrice(lineItem.getUnitPrice());
+          setQuantityShipped(qty);
+    stack_metadata:
+      ejb.bean: LineItemEJB
+  - record_key: SUPPLIER-REQ-0002
+    kind: requirement
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL allow the shipped quantity of a line item to be updated after creation, and SHALL expose the other fields read-only through the local interface transaction list.
+    confidence: medium
+    confidence_basis: Only setQuantityShipped is listed with a transaction attribute besides getters; no other setters are listed. Local interface file not read in full.
+    risk_class: operational
+    basis: Container-transaction entries list getters, setQuantityShipped, both creates and getData.
+    plain_text: >
+      Only the shipped quantity is meant to change once a line exists; other details are read-only.
+    technical_note: >
+      Descriptor lists no setQuantity or setUnitPrice. The setters are still abstract public methods on the bean class; exposure on the local interface was not verified.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/lineitem/src/ejb-jar.xml
+        line_start: 156
+        line_end: 166
+        excerpt: |
+          <method-name>setQuantityShipped</method-name>
+          ...
+          <trans-attribute>Required</trans-attribute>
+    stack_metadata:
+      ejb.transaction: Required
+      framework: EJB 2.0 CMP
+  - record_key: SUPPLIER-REQ-0003
+    kind: requirement
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL return a line item data snapshot containing category, product, item, line number, quantity and unit price.
+    confidence: medium
+    confidence_basis: One clear place (getData); the omission of quantity shipped is read directly from the code.
+    risk_class: operational
+    basis: getData copies six of the seven fields.
+    plain_text: >
+      When a line item is read as a snapshot, it includes what was ordered and the price but not how much has shipped.
+    technical_note: >
+      getData builds a LineItem value object; quantityShipped is not copied.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/lineitem/src/com/sun/j2ee/blueprints/lineitem/ejb/LineItemEJB.java
+        line_start: 171
+        line_end: 180
+        excerpt: |
+          public LineItem getData() {
+            LineItem lineItem = new LineItem();
+            ...
+            lineItem.setUnitPrice(getUnitPrice());
+            return lineItem;
+    stack_metadata:
+      ejb.bean: LineItemEJB
+  - record_key: SUPPLIER-REQ-0004
+    kind: requirement
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL run all line item create, read and shipped-quantity update operations inside a transaction, and SHALL allow any caller to invoke them without a role check.
+    confidence: high
+    confidence_basis: Two declarations in the descriptor (transaction attribute and unchecked method permission).
+    risk_class: operational
+    basis: method-permission unchecked for all methods; trans-attribute Required on listed methods.
+    plain_text: >
+      Line item changes happen all-or-nothing, and no particular user role is required to use them.
+    technical_note: >
+      Security identity is use-caller-identity; permissions are <unchecked/> on method *.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/lineitem/src/ejb-jar.xml
+        line_start: 85
+        line_end: 92
+        excerpt: |
+          <method-permission>
+            <unchecked />
+            <method>
+              <ejb-name>LineItemEJB</ejb-name>
+              <method-name>*</method-name>
+    stack_metadata:
+      ejb.transaction: Required
+      framework: EJB 2.0 CMP
+suspected_defects:
+  - capability_key: supplier-fulfilment
+    record_keys: [SUPPLIER-REQ-0003]
+    severity: medium
+    category: data-corruption
+    title: Snapshot drops quantity shipped
+    description: >
+      getData omits quantityShipped, so a line item copied from a snapshot loses shipped state unless it is supplied separately. Whether callers rely on this is not visible in this module.
+    traces:
+      - path: legacy-source/app/src/components/lineitem/src/com/sun/j2ee/blueprints/lineitem/ejb/LineItemEJB.java
+        line_start: 171
+        line_end: 180
+  - capability_key: supplier-fulfilment
+    record_keys: [SUPPLIER-ENTITY-0001]
+    severity: low
+    category: other
+    title: Unit price stored as float
+    description: >
+      Money is held as a binary float, which can introduce rounding errors in totals.
+    traces:
+      - path: legacy-source/app/src/components/lineitem/src/com/sun/j2ee/blueprints/lineitem/ejb/LineItemEJB.java
+        line_start: 118
+        line_end: 124
+findings:
+  - kind: ambiguity
+    path: legacy-source/app/src/components/lineitem/src/com/sun/j2ee/blueprints/lineitem/ejb/LineItemEJB.java
+    description: >
+      Which capability owns line items (shopping-cart, order-processing-workflow or supplier-fulfilment) is not determinable from this module; filed under supplier-fulfilment because of the quantity-shipped field. No documents under legacy-analysis/sources were available.
