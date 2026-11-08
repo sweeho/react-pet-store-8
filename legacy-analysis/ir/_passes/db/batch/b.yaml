@@ -1,0 +1,352 @@
+records:
+  - record_key: BATCH-REQ-0001
+    kind: business-rule
+    capability_key: batch-operations
+    requirement: The system SHALL, in the catalog integrity check, report every category that has no product (C1) and every product that has no item (C2).
+    confidence: high
+    confidence_basis: Two explicit queries with header comments stating each must return 0 rows; the job script fails on any C1-C5 row. Only one SQL file defines it, plus the header comment.
+    risk_class: operational
+    basis: Catalog check SQL lists empty categories and empty products as integrity violations.
+    plain_text: Every night the catalog is checked, and any category with no products, or product with no items, is flagged as a problem.
+    technical_note: catalog_check.sql C1 and C2 use NOT EXISTS; ps_catalog_check.sh treats rows starting C1-C5 as failure (exit code 4).
+    interface: false
+    traces:
+      - path: legacy-source/db/batch/catalog_check.sql
+        line_start: 1
+        line_end: 8
+        excerpt: |
+          -- PS_CATALOG_CHECK: catalog integrity checks. Each query must return 0 rows;
+          -- the script fails the job (code 4) when any row starts with C1 to C5.
+          -- C1: categories with no product
+          SELECT 'C1' AS chk, c.catid FROM category c
+           WHERE NOT EXISTS (SELECT 1 FROM product p WHERE p.catid = c.catid);
+          -- C2: products with no item
+          SELECT 'C2' AS chk, p.productid FROM product p
+           WHERE NOT EXISTS (SELECT 1 FROM item i WHERE i.productid = p.productid);
+    stack_metadata:
+      db.object: category, product, item
+      batch.trigger: PS_CATALOG_CHECK job
+  - record_key: BATCH-REQ-0002
+    kind: business-rule
+    capability_key: batch-operations
+    requirement: The system SHALL, in the catalog integrity check, report every item locale-detail whose list price is below its unit cost (C3).
+    confidence: medium
+    confidence_basis: One clear query; no second place (no constraint in this module) enforces or documents price-vs-cost.
+    risk_class: financial
+    basis: C3 selects item_details rows with listprice < unitcost.
+    plain_text: Items that would be sold for less than they cost are flagged in the nightly catalog check.
+    technical_note: catalog_check.sql C3 on item_details; reported only, nothing blocks such prices at entry in this module.
+    interface: false
+    traces:
+      - path: legacy-source/db/batch/catalog_check.sql
+        line_start: 9
+        line_end: 10
+        excerpt: |
+          -- C3: items priced below cost
+          SELECT 'C3' AS chk, itemid, locale FROM item_details WHERE listprice < unitcost;
+    stack_metadata:
+      db.object: item_details
+  - record_key: BATCH-REQ-0003
+    kind: business-rule
+    capability_key: localization
+    requirement: The system SHALL, in the catalog integrity check, report every item that lacks an item description for any locale configured on the item's category (C4).
+    confidence: medium
+    confidence_basis: One query. Comment says locales are en_US, ja_JP, zh_CN but the query derives locales from category_details rows, not a literal list; the two could differ.
+    risk_class: operational
+    basis: C4 cross-joins item with category_details locales for the item's category and flags missing item_details.
+    plain_text: Every item must have a description in each language its category is offered in; missing ones are flagged.
+    technical_note: catalog_check.sql C4; filed under localization as it is a per-locale completeness rule.
+    interface: false
+    traces:
+      - path: legacy-source/db/batch/catalog_check.sql
+        line_start: 11
+        line_end: 14
+        excerpt: |
+          -- C4: items missing a description for a locale the store serves (en_US, ja_JP, zh_CN)
+          SELECT 'C4' AS chk, i.itemid, l.locale FROM item i, category_details l
+           WHERE l.catid = (SELECT p.catid FROM product p WHERE p.productid = i.productid)
+             AND NOT EXISTS (SELECT 1 FROM item_details d WHERE d.itemid = i.itemid AND d.locale = l.locale);
+    stack_metadata:
+      db.object: item, category_details, item_details
+  - record_key: BATCH-REQ-0004
+    kind: business-rule
+    capability_key: supplier-fulfilment
+    requirement: The system SHALL, in the catalog integrity check, report every item that has no supplier inventory row (C5).
+    confidence: medium
+    confidence_basis: One query with comment; inventory table belongs to the supplier module so the cross-module meaning is inferred.
+    risk_class: operational
+    basis: C5 flags items with no row in inventory.
+    plain_text: Items the supplier does not stock are flagged in the nightly catalog check.
+    technical_note: catalog_check.sql C5; filed under supplier-fulfilment since inventory is supplier-owned.
+    interface: false
+    traces:
+      - path: legacy-source/db/batch/catalog_check.sql
+        line_start: 15
+        line_end: 17
+        excerpt: |
+          -- C5: items the supplier does not stock
+          SELECT 'C5' AS chk, i.itemid FROM item i
+           WHERE NOT EXISTS (SELECT 1 FROM inventory v WHERE v.item_id = i.itemid);
+    stack_metadata:
+      db.object: item, inventory
+  - record_key: BATCH-REQ-0005
+    kind: requirement
+    capability_key: batch-operations
+    requirement: The system SHALL report supplier items with stock quantity below a configurable low-stock threshold, ordered by lowest quantity then item id, with item description in English, followed by the count of tracked items and total units in stock.
+    confidence: high
+    confidence_basis: SQL, parameter comment pointing to env config, and the calling script binding the threshold all agree.
+    risk_class: operational
+    basis: inventory_report.sql parameter :LOW_QTY from PS_LOW_STOCK_QTY.
+    plain_text: A report lists items whose stock is below a set level, lowest first, with totals of tracked items and units in stock.
+    technical_note: Description joined only on en_US; items without an en_US description are silently omitted by the inner join.
+    interface: false
+    traces:
+      - path: legacy-source/db/batch/inventory_report.sql
+        line_start: 1
+        line_end: 10
+        excerpt: |
+          -- PS_INVENTORY_REPORT: supplier stock below the threshold, lowest first.
+          -- :LOW_QTY is PS_LOW_STOCK_QTY from conf/env.sh.
+          SELECT i.item_id, p.productid, d.descn, i.quantity
+            FROM inventory i
+            JOIN item p ON p.itemid = i.item_id
+            JOIN item_details d ON d.itemid = i.item_id AND d.locale = 'en_US'
+           WHERE i.quantity < :LOW_QTY
+           ORDER BY i.quantity, i.item_id;
+          SELECT COUNT(*) AS items_tracked, SUM(quantity) AS units_in_stock FROM inventory;
+      - path: legacy-source/batch/ps_inventory_report.sh
+        line_start: 9
+        line_end: 10
+        excerpt: |
+          ps_log "start threshold=$PS_LOW_STOCK_QTY"
+          ps_sql_bind "$PS_SQL/inventory_report.sql" "$SQL" LOW_QTY="$PS_LOW_STOCK_QTY"
+    stack_metadata:
+      batch.trigger: PS_INVENTORY_REPORT job
+      db.object: inventory, item, item_details
+  - record_key: BATCH-REQ-0006
+    kind: business-rule
+    capability_key: batch-operations
+    requirement: The system SHALL list as STUCK every order whose workflow status is PENDING or APPROVED and whose order date is older than a cutoff of now minus a configured number of hours (24), oldest first, with order id, user, locale, value and status.
+    confidence: high
+    confidence_basis: SQL, header comment, and script computing the cutoff from PS_STUCK_ORDER_HOURS all seen; the script exit 4 on STUCK rows.
+    risk_class: operational
+    basis: order_aging.sql selects stuck orders; script flags exit 4 with warning.
+    plain_text: Orders still waiting for approval or for supplier invoicing after a day are listed as stuck so operators can follow up.
+    technical_note: Cutoff in epoch ms passed as :CUTOFF_MS by ps_order_aging_report.sh. Script header comment says "not COMPLETED or DENIED" which is broader than the SQL's PENDING/APPROVED list.
+    interface: false
+    traces:
+      - path: legacy-source/db/batch/order_aging.sql
+        line_start: 1
+        line_end: 7
+        excerpt: |
+          -- PS_ORDER_AGING_REPORT: orders still PENDING or APPROVED after 24 hours.
+          -- PENDING = waiting for the admin client. APPROVED = sent to the supplier, no invoice yet.
+          -- :CUTOFF_MS is now minus 24 hours in epoch milliseconds. Report rows start with STUCK.
+          SELECT 'STUCK' AS chk, p.po_id, p.po_user_id, p.po_locale, p.po_value, m.status
+            FROM purchase_order p JOIN order_manager m ON m.order_id = p.po_id
+           WHERE m.status IN ('PENDING', 'APPROVED') AND p.po_date < :CUTOFF_MS
+           ORDER BY p.po_date;
+      - path: legacy-source/batch/ps_order_aging_report.sh
+        line_start: 10
+        line_end: 16
+        excerpt: |
+          CUTOFF_MS=$(( $(date '+%s') * 1000 - PS_STUCK_ORDER_HOURS * 3600000 ))
+          ps_log "start cutoff_hours=$PS_STUCK_ORDER_HOURS"
+          ps_sql_bind "$PS_SQL/order_aging.sql" "$SQL" CUTOFF_MS="$CUTOFF_MS"
+          ps_ij "$SQL" > "$OUT" || { ps_log "FAILED"; exit 8; }
+          if grep -qE "^(STUCK|MISMATCH) " "$OUT"; then
+            ps_log "end WARNING stuck orders listed in $OUT"
+            exit 4
+    stack_metadata:
+      batch.trigger: PS_ORDER_AGING_REPORT job
+      db.object: purchase_order, order_manager
+  - record_key: BATCH-REQ-0007
+    kind: business-rule
+    capability_key: order-processing-workflow
+    requirement: The system SHALL list as MISMATCH every order for which the supplier order status is COMPLETED but the order manager status is not COMPLETED, and SHALL also report the count of orders per workflow status.
+    confidence: medium
+    confidence_basis: One query plus comment explaining the lost invoice message; the check applies no age cutoff.
+    risk_class: operational
+    basis: order_aging.sql MISMATCH query and status count.
+    plain_text: Orders the supplier has invoiced but that were never closed on our side are flagged, because the invoice message was lost.
+    technical_note: No time cutoff on MISMATCH, so a just-invoiced order still in flight can be listed transiently.
+    interface: true
+    traces:
+      - path: legacy-source/db/batch/order_aging.sql
+        line_start: 9
+        line_end: 14
+        excerpt: |
+          SELECT status, COUNT(*) AS orders FROM order_manager GROUP BY status ORDER BY status;
+
+          -- Supplier invoiced (COMPLETED) but the OPC never closed the order: the invoice message was lost.
+          SELECT 'MISMATCH' AS chk, m.order_id, m.status, s.po_status
+            FROM order_manager m JOIN supplier_order s ON s.po_id = m.order_id
+           WHERE s.po_status = 'COMPLETED' AND m.status <> 'COMPLETED';
+    stack_metadata:
+      db.object: order_manager, supplier_order
+  - record_key: BATCH-REQ-0008
+    kind: integration
+    capability_key: batch-operations
+    requirement: The system SHALL export the purchase orders dated from yesterday 00:00 up to but excluding today 00:00 to a comma-delimited, double-quote-qualified UTF-8 file for Finance, with order id, user, date, locale, value, line-item count and status, ordered by order id, named orders_YYYYMMDD.csv.
+    confidence: high
+    confidence_basis: SQL comment and the export call state the window and format; script binds the window and renames the file.
+    risk_class: financial
+    basis: order_extract.sql SYSCS_EXPORT_QUERY.
+    plain_text: Each day, yesterday's orders are exported to a file for the Finance team.
+    technical_note: Window bound by ps_order_extract.sh via ps_midnight_ms(1) and (0). Output has no header row (Derby export default).
+    interface: true
+    traces:
+      - path: legacy-source/db/batch/order_extract.sql
+        line_start: 1
+        line_end: 12
+        excerpt: |
+          -- PS_ORDER_EXTRACT: export yesterday's purchase orders for Finance.
+          -- :LO_MS and :HI_MS are epoch milliseconds (yesterday 00:00 and today 00:00),
+          CALL SYSCS_UTIL.SYSCS_EXPORT_QUERY(
+            'SELECT p.po_id, p.po_user_id, p.po_date, p.po_locale, p.po_value,
+                    (SELECT COUNT(*) FROM po_line_item l WHERE l.po_id = p.po_id),
+                    m.status
+               FROM purchase_order p JOIN order_manager m ON m.order_id = p.po_id
+              WHERE p.po_date >= :LO_MS AND p.po_date < :HI_MS
+              ORDER BY p.po_id',
+            ':OUT_FILE', ',', '"', 'UTF-8');
+      - path: legacy-source/batch/ps_order_extract.sh
+        line_start: 11
+        line_end: 13
+        excerpt: |
+          ps_sql_bind "$PS_SQL/order_extract.sql" "$SQL" LO_MS="$(ps_midnight_ms 1)" HI_MS="$(ps_midnight_ms 0)" OUT_FILE="$PS_EXTRACT_DIR/orders_extract.csv"
+          ps_ij "$SQL" > /dev/null || { ps_log "FAILED: export"; exit 8; }
+    stack_metadata:
+      batch.trigger: PS_ORDER_EXTRACT job
+      db.object: purchase_order, po_line_item, order_manager
+  - record_key: BATCH-REQ-0009
+    kind: business-rule
+    capability_key: batch-operations
+    requirement: The system SHALL delete, in one transaction, every order whose status is COMPLETED or DENIED and whose date is before the retention cutoff (180 days), together with its supplier lines, supplier order, order lines, order-manager row, contact info, address and credit card.
+    confidence: high
+    confidence_basis: SQL header, delete list, and the script computing the cutoff from PS_ORDER_RETENTION_DAYS; single transaction with autocommit off.
+    risk_class: regulated
+    basis: order_purge.sql selects into a temp table then deletes children before parents and commits.
+    plain_text: Finished or refused orders older than about six months are permanently removed along with the customer contact, address and card details attached to them.
+    technical_note: Cutoff is midnight N days ago. Inner join to contact_info means an order with no contact row is never purged. Deletes contact, address and card by id with no check that they are not shared with other orders or the customer profile.
+    interface: false
+    traces:
+      - path: legacy-source/db/batch/order_purge.sql
+        line_start: 1
+        line_end: 26
+        excerpt: |
+          -- PS_ORDER_PURGE: delete COMPLETED and DENIED orders older than 180 days.
+          INSERT INTO session.purge_po
+            SELECT p.po_id, p.contact_id, p.card_id, c.address_id
+              FROM purchase_order p
+              JOIN order_manager m ON m.order_id = p.po_id
+              JOIN contact_info c ON c.contact_id = p.contact_id
+             WHERE m.status IN ('COMPLETED', 'DENIED') AND p.po_date < :CUTOFF_MS;
+          DELETE FROM contact_info       WHERE contact_id IN (SELECT contact_id FROM session.purge_po);
+          DELETE FROM address            WHERE address_id IN (SELECT address_id FROM session.purge_po);
+          DELETE FROM credit_card        WHERE card_id IN (SELECT card_id FROM session.purge_po);
+          COMMIT;
+      - path: legacy-source/batch/ps_order_purge.sh
+        line_start: 8
+        line_end: 8
+        excerpt: |
+          CUTOFF_MS=$(ps_midnight_ms "$PS_ORDER_RETENTION_DAYS")
+    stack_metadata:
+      batch.trigger: PS_ORDER_PURGE job
+      db.object: purchase_order, order_manager, contact_info, address, credit_card, supplier_order
+  - record_key: BATCH-REQ-0010
+    kind: business-rule
+    capability_key: batch-operations
+    requirement: GIVEN the order purge runs WHEN it is scheduled THEN the order extract SHALL have run first so every purged order has been exported.
+    confidence: low
+    confidence_basis: Stated only in a comment; nothing in the SQL checks that the extract happened, and the extract covers only yesterday's orders.
+    risk_class: financial
+    basis: order_purge.sql header comment.
+    plain_text: Orders are only deleted after the daily Finance export has run.
+    technical_note: Ordering is by schedule only. Orders older than a day that were never extracted (e.g. extract missed a day) are purged anyway.
+    interface: false
+    dispute:
+      reason: unresolved-reachability
+      detail: Scheduling order of the jobs is not in the SQL; the cron or scheduler configuration would settle whether purge always follows extract.
+    traces:
+      - path: legacy-source/db/batch/order_purge.sql
+        line_start: 2
+        line_end: 2
+        excerpt: |
+          -- Runs only after PS_ORDER_EXTRACT so every order has been extracted first.
+    stack_metadata:
+      batch.trigger: PS_ORDER_PURGE after PS_ORDER_EXTRACT
+  - record_key: BATCH-REQ-0011
+    kind: requirement
+    capability_key: batch-operations
+    requirement: The system SHALL take an online backup of the database into the backup directory using the database's built-in backup procedure.
+    confidence: medium
+    confidence_basis: Single call with comment; the dated-folder move happens in the script not read in this pass.
+    risk_class: operational
+    basis: db_backup.sql calls the backup procedure with a fixed path.
+    plain_text: The store database is backed up while running, into a fixed backup location.
+    technical_note: Derby SYSCS_UTIL.SYSCS_BACKUP_DATABASE to /var/petstore/backup, hard-coded; the script renames to a dated folder.
+    interface: false
+    traces:
+      - path: legacy-source/db/batch/db_backup.sql
+        line_start: 1
+        line_end: 3
+        excerpt: |
+          -- PS_DB_BACKUP: online backup of PetStoreDB.
+          -- Derby writes /var/petstore/backup/PetStoreDB; the script moves it to a dated folder.
+          CALL SYSCS_UTIL.SYSCS_BACKUP_DATABASE('/var/petstore/backup');
+    stack_metadata:
+      batch.trigger: PS_DB_BACKUP job
+      db.object: PetStoreDB
+suspected_defects:
+  - capability_key: batch-operations
+    record_keys: [BATCH-REQ-0009, BATCH-REQ-0010]
+    severity: high
+    category: data-corruption
+    title: Purge removes contact, address and card by id without checking sharing, and does not verify extraction
+    description: >
+      The purge deletes contact_info, address and credit_card rows referenced by purged orders without checking whether other orders or customer profiles reference them, and it depends only on job ordering (not a check) for the claim that orders were extracted. The extract covers only yesterday, so an order older than that is purged whether or not it was ever exported.
+    traces:
+      - path: legacy-source/db/batch/order_purge.sql
+        line_start: 2
+        line_end: 26
+        excerpt: |
+          -- Runs only after PS_ORDER_EXTRACT so every order has been extracted first.
+          DELETE FROM contact_info       WHERE contact_id IN (SELECT contact_id FROM session.purge_po);
+          DELETE FROM credit_card        WHERE card_id IN (SELECT card_id FROM session.purge_po);
+  - capability_key: batch-operations
+    record_keys: [BATCH-REQ-0005]
+    severity: low
+    category: other
+    title: Low-stock report silently omits items without an English description
+    description: >
+      The inner join to item_details restricted to en_US drops low-stock items that have no English description, so they are never reported.
+    traces:
+      - path: legacy-source/db/batch/inventory_report.sql
+        line_start: 3
+        line_end: 7
+        excerpt: |
+          SELECT i.item_id, p.productid, d.descn, i.quantity
+            FROM inventory i
+            JOIN item p ON p.itemid = i.item_id
+            JOIN item_details d ON d.itemid = i.item_id AND d.locale = 'en_US'
+           WHERE i.quantity < :LOW_QTY
+  - capability_key: batch-operations
+    record_keys: [BATCH-REQ-0006]
+    severity: low
+    category: contradicts-document
+    title: Aging script comment describes a wider rule than the SQL implements
+    description: >
+      The script header says it lists orders not COMPLETED or DENIED, while the SQL lists only PENDING and APPROVED.
+    traces:
+      - path: legacy-source/batch/ps_order_aging_report.sh
+        line_start: 3
+        line_end: 3
+        excerpt: |
+          # Lists orders not COMPLETED or DENIED after 24 hours (stuck in the OPC flow)
+      - path: legacy-source/db/batch/order_aging.sql
+        line_start: 6
+        line_end: 6
+        excerpt: |
+          WHERE m.status IN ('PENDING', 'APPROVED') AND p.po_date < :CUTOFF_MS
+findings: []
