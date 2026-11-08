@@ -1,0 +1,109 @@
+records:
+  - record_key: ORDPROC-INT-0001
+    kind: integration
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL accept a text message from a calling component and publish it as a single text message to the configured asynchronous-sender queue, so that downstream consumers receive it without the caller waiting for their processing.
+    confidence: high
+    confidence_basis: >
+      Implementation in the bean plus matching declarative resource references and method permission in the descriptor. Which downstream consumers exist is not visible in this module.
+    risk_class: operational
+    basis: >
+      sendAMessage opens a queue connection, creates a sender on the queue, wraps the string in a text message and sends it. The queue is resolved at bean creation.
+    plain_text: >
+      Other parts of the application can hand over a text message, and it is placed on a queue for later processing by another part of the system.
+    technical_note: >
+      AsyncSenderEJB.sendAMessage(String) uses QueueConnectionFactory and Queue looked up via ServiceLocator in ejbCreate (JNDI jms/QueueConnectionFactory, jms/AsyncSenderQueue). Stateless local session bean.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/asyncsender/src/com/sun/j2ee/blueprints/asyncsender/ejb/AsyncSenderEJB.java
+        line_start: 68
+        line_end: 90
+        excerpt: |
+          qConnect = qFactory.createQueueConnection();
+          session = qConnect.createQueueSession(true,0);
+          qSender = session.createSender(q);
+          TextMessage jmsMsg = session.createTextMessage();
+          jmsMsg.setText(msg);
+          qSender.send(jmsMsg);
+      - path: legacy-source/app/src/components/asyncsender/src/ejb-jar.xml
+        line_start: 58
+        line_end: 67
+        excerpt: |
+          <res-ref-name>jms/QueueConnectionFactory</res-ref-name>
+          <resource-env-ref-name>jms/AsyncSenderQueue</resource-env-ref-name>
+    stack_metadata:
+      framework: J2EE EJB 2.0
+      ejb.bean: AsyncSenderEJB
+      jms.queue: jms/AsyncSenderQueue
+  - record_key: ORDPROC-RULE-0002
+    kind: business-rule
+    capability_key: order-processing-workflow
+    requirement: >
+      GIVEN a message send fails for any reason WHEN the sender is invoked THEN the system SHALL report failure to the caller by raising an error rather than silently continuing, and SHALL release the queue connection.
+    confidence: medium
+    confidence_basis: >
+      One clear place in code (catch/finally). Failures while closing the connection are intentionally ignored.
+    risk_class: operational
+    basis: >
+      Any exception is logged, rethrown as a system error; the connection is closed in finally with close errors ignored.
+    plain_text: >
+      If a message cannot be queued, the requesting process is told it failed. Connections are always released.
+    technical_note: >
+      catch(Exception) prints stack trace and throws EJBException; finally closes qConnect, swallowing exceptions. Method runs under container transaction attribute Required, but the JMS session is created transacted with ack mode 0.
+    interface: true
+    traces:
+      - path: legacy-source/app/src/components/asyncsender/src/com/sun/j2ee/blueprints/asyncsender/ejb/AsyncSenderEJB.java
+        line_start: 80
+        line_end: 89
+        excerpt: |
+          }catch  (Exception e) {
+            e.printStackTrace();
+            throw new EJBException("askMDBToSendAMessage: Error!",e);
+          } finally {
+            try {
+                      if( qConnect != null ) {
+                qConnect.close();
+    stack_metadata:
+      ejb.bean: AsyncSenderEJB
+  - record_key: ORDPROC-RULE-0003
+    kind: business-rule
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL perform the send within the caller's transaction (or start one), and SHALL allow any caller to invoke the send without role restrictions.
+    confidence: medium
+    confidence_basis: >
+      Declared in the descriptor in one place; no code check contradicts it.
+    risk_class: operational
+    basis: >
+      Container-managed transaction attribute Required on sendAMessage; method permission is unchecked for all exposed methods.
+    plain_text: >
+      Queuing a message is part of the surrounding business transaction, and no special permission is needed to do it.
+    technical_note: >
+      ejb-jar.xml container-transaction trans-attribute Required; method-permission unchecked incl. sendAMessage; security-identity use-caller-identity.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/asyncsender/src/ejb-jar.xml
+        line_start: 71
+        line_end: 132
+        excerpt: |
+          <method-permission>
+            <unchecked />
+          ...
+          <trans-attribute>Required</trans-attribute>
+    stack_metadata:
+      ejb.transaction: Required
+      ejb.bean: AsyncSenderEJB
+suspected_defects:
+  - capability_key: order-processing-workflow
+    record_keys: [ORDPROC-RULE-0002]
+    severity: low
+    category: other
+    title: Exception message names a different method
+    description: >
+      The error raised from the send method is labelled "askMDBToSendAMessage", a name that does not exist in this component; it may mislead diagnosis.
+    traces:
+      - path: legacy-source/app/src/components/asyncsender/src/com/sun/j2ee/blueprints/asyncsender/ejb/AsyncSenderEJB.java
+        line_start: 82
+        line_end: 82
+findings: []
