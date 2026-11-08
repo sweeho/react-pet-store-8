@@ -1,0 +1,183 @@
+records:
+  - record_key: OPW-REQ-0001
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL resolve named platform resources (local and remote component homes, message queues and topics with their connection factories, data sources, and URL, boolean and string configuration entries) through a single lookup service instead of each caller performing its own naming lookup.
+    confidence: high
+    confidence_basis: >
+      The same lookup operations are implemented twice (web and ejb variants) with identical signatures; no tests or docs seen, and no callers in this module, so not graded on usage.
+    risk_class: operational
+    basis: >
+      Both locator classes expose getLocalHome, getRemoteHome, getQueueConnectionFactory, getQueue, getTopicConnectionFactory, getTopic, getDataSource, getUrl, getBoolean, getString over a JNDI InitialContext. Filed under order-processing-workflow as the closest capability (JMS hand-offs); it is really shared infrastructure fitting no listed capability.
+    plain_text: >
+      Every part of the application finds the queues, databases and settings it needs through one shared lookup facility, by name.
+    technical_note: >
+      Service Locator pattern over javax.naming.InitialContext in web/ServiceLocator.java and ejb/ServiceLocator.java.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/web/ServiceLocator.java
+        line_start: 106
+        line_end: 304
+        excerpt: |
+          public EJBLocalHome getLocalHome(String jndiHomeName) throws ServiceLocatorException {
+          ... public String getString(String envName) throws ServiceLocatorException {
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/ejb/ServiceLocator.java
+        line_start: 83
+        line_end: 243
+        excerpt: |
+          public EJBLocalHome getLocalHome(String jndiHomeName) throws ServiceLocatorException {
+          ... public String getString(String envName) throws ServiceLocatorException {
+    stack_metadata:
+      framework: JNDI service locator
+  - record_key: OPW-REQ-0002
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: >
+      The web-tier lookup service SHALL be a single shared instance and SHALL cache every component home, connection factory, queue, topic and data source after its first successful lookup, returning the cached object on later requests for the same name.
+    confidence: medium
+    confidence_basis: >
+      Clearly enforced in one file (web variant) only; the class comment states the intent too, but nothing else corroborates it.
+    risk_class: operational
+    basis: >
+      Singleton created in a static initialiser; synchronized HashMap checked with containsKey before lookup. URL, boolean and string entries are not cached.
+    plain_text: >
+      On the web side, a resource once found is remembered and reused, so repeated requests do not search for it again.
+    technical_note: >
+      web/ServiceLocator.java uses Collections.synchronizedMap(new HashMap()) keyed by JNDI name. One shared map for all resource types, so the same name used for two types returns whatever was cached first (ClassCastException wrapped in ServiceLocatorException).
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/web/ServiceLocator.java
+        line_start: 67
+        line_end: 96
+        excerpt: |
+          private Map cache;
+          static { try { me = new ServiceLocator(); } ...
+          static public ServiceLocator getInstance() { return me; }
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/web/ServiceLocator.java
+        line_start: 109
+        line_end: 114
+        excerpt: |
+          if (cache.containsKey(jndiHomeName)) {
+              home = (EJBLocalHome) cache.get(jndiHomeName);
+          } else {
+              home = (EJBLocalHome) ic.lookup(jndiHomeName);
+              cache.put(jndiHomeName, home);
+    stack_metadata:
+      framework: JNDI service locator
+      session.scope: application singleton
+  - record_key: OPW-REQ-0003
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: >
+      The EJB-tier lookup service SHALL NOT cache results and SHALL perform a fresh naming lookup on every request; it is instantiated per caller rather than shared.
+    confidence: medium
+    confidence_basis: >
+      Visible in one file; the contrast with the web variant makes it clearly deliberate but no comment states why.
+    risk_class: operational
+    basis: >
+      ejb/ServiceLocator.java has a public constructor, no cache field, and an unused static field me.
+    plain_text: >
+      On the back-end side, resources are looked up afresh each time and not remembered.
+    technical_note: >
+      The static field me is declared and never assigned or read in ejb/ServiceLocator.java.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/ejb/ServiceLocator.java
+        line_start: 60
+        line_end: 74
+        excerpt: |
+          private InitialContext ic;
+          private static ServiceLocator me;
+          public ServiceLocator() throws ServiceLocatorException  {
+            try { ic = new InitialContext();
+    stack_metadata:
+      framework: JNDI service locator
+  - record_key: OPW-BR-0004
+    kind: business-rule
+    capability_key: order-processing-workflow
+    requirement: >
+      GIVEN a lookup fails for any reason (name not found, wrong type, or any other error), WHEN the caller requests the resource, THEN the lookup service SHALL raise a single lookup-failure error wrapping the original cause.
+    confidence: high
+    confidence_basis: >
+      Same wrapping pattern repeated in every method of both classes.
+    risk_class: operational
+    basis: >
+      Every method catches NamingException and Exception and rethrows ServiceLocatorException(cause).
+    plain_text: >
+      If a needed resource cannot be found, the caller gets one uniform failure that keeps the original reason.
+    technical_note: >
+      Duplicate catch blocks are redundant. getBoolean on a missing value would throw before unboxing, and is wrapped as well.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/web/ServiceLocator.java
+        line_start: 115
+        line_end: 119
+        excerpt: |
+          } catch (NamingException ne) {
+                throw new ServiceLocatorException(ne);
+           } catch (Exception e) {
+                throw new ServiceLocatorException(e);
+           }
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/ejb/ServiceLocator.java
+        line_start: 87
+        line_end: 91
+        excerpt: |
+          } catch (NamingException ne) {
+                throw new ServiceLocatorException(ne);
+           } catch (Exception e) {
+                throw new ServiceLocatorException(e);
+           }
+    stack_metadata:
+      framework: JNDI service locator
+  - record_key: OPW-BR-0005
+    kind: business-rule
+    capability_key: customer-notifications
+    requirement: >
+      The system SHALL read boolean configuration switches, such as whether to send a confirmation mail, from named environment entries through the lookup service.
+    confidence: low
+    confidence_basis: >
+      Only a Javadoc comment names SEND_CONFIRMATION_MAIL; the entry's value and consumers are outside this module.
+    risk_class: operational
+    basis: >
+      getBoolean javadoc cites SEND_CONFIRMATION_MAIL as the example property.
+    plain_text: >
+      Whether confirmation emails are sent is controlled by a setting that the application reads at run time.
+    technical_note: >
+      Env entry value and use live elsewhere; this module only provides the accessor.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/web/ServiceLocator.java
+        line_start: 274
+        line_end: 288
+        excerpt: |
+          /**
+           * @return the boolean value corresponding
+           * to the env entry such as SEND_CONFIRMATION_MAIL property.
+           */
+          public boolean getBoolean(String envName) throws ServiceLocatorException {
+    stack_metadata:
+      framework: JNDI env-entry
+suspected_defects:
+  - capability_key: order-processing-workflow
+    record_keys: [OPW-REQ-0002]
+    severity: low
+    category: other
+    title: Web cache shares one namespace across resource types and bypasses error on swallowed init failure
+    description: >
+      The web locator initialises its singleton in a static block that only prints failures; if initial context creation fails, getInstance returns null and callers hit a null pointer. The cache is a single map for all types.
+    traces:
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/web/ServiceLocator.java
+        line_start: 74
+        line_end: 81
+        excerpt: |
+          static {
+            try {
+              me = new ServiceLocator();
+            } catch(ServiceLocatorException se) {
+              System.err.println(se);
+findings:
+  - kind: ambiguity
+    path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/ejb/ServiceLocator.java
+    description: >
+      No documents under legacy-analysis/sources exist for this module. The component fits no listed capability cleanly; filed under order-processing-workflow (JMS) and customer-notifications. A human may prefer to treat it as shared infrastructure.
