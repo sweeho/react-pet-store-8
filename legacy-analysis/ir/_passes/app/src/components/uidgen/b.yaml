@@ -1,0 +1,208 @@
+records:
+  - record_key: ORDPW-REQ-0001
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL return, for a given identifier prefix, a unique identifier formed by concatenating the prefix with the next value of a per-prefix counter.
+    plain_text: >
+      Each time a new identifier is requested for a given prefix, the system hands back the prefix followed by the next number in that prefix's sequence.
+    technical_note: >
+      UniqueIdGeneratorEJB.getUniqueId(prefix) looks up the counter named by the prefix and returns CounterEJB.getNextValue() = name + (counter+1).
+    interface: false
+    confidence: high
+    confidence_basis: >
+      Session bean delegation and counter increment are both read in code, and the ejb-jar method-permission and transaction entries declare the same methods.
+    risk_class: operational
+    basis: Two cooperating beans produce the identifier.
+    traces:
+      - path: legacy-source/app/src/components/uidgen/src/com/sun/j2ee/blueprints/uidgen/ejb/UniqueIdGeneratorEJB.java
+        line_start: 67
+        line_end: 69
+        excerpt: |
+          public String getUniqueId(String idPrefix) {
+              return getCounter(idPrefix).getNextValue();
+          }
+      - path: legacy-source/app/src/components/uidgen/src/com/sun/j2ee/blueprints/uidgen/counter/ejb/CounterEJB.java
+        line_start: 159
+        line_end: 163
+        excerpt: |
+          public String getNextValue() {
+              int count = getCounter() + 1;
+              setCounter(count);
+              return getName() + String.valueOf(count);
+          }
+    stack_metadata:
+      framework: EJB 2.0
+      ejb.bean: UniqueIdGeneratorEJB, CounterEJB
+      ejb.transaction: Required
+  - record_key: ORDPW-BR-0002
+    kind: business-rule
+    capability_key: order-processing-workflow
+    requirement: >
+      GIVEN an identifier prefix that has no counter yet, WHEN an identifier is requested, THEN the system SHALL create a counter for that prefix starting at 0, so the first identifier issued ends in 1.
+    plain_text: >
+      The first time a prefix is used, its numbering starts fresh, and the first identifier carries the number 1.
+    technical_note: >
+      getCounter() calls findByPrimaryKey and on FinderException creates the counter; CounterEJB.ejbCreate sets name and counter=0. A failed create is raised as an EJBException.
+    interface: false
+    confidence: high
+    confidence_basis: Create-on-miss logic in the session bean plus the initial value in the entity bean, two places.
+    risk_class: operational
+    basis: Counters are created lazily.
+    traces:
+      - path: legacy-source/app/src/components/uidgen/src/com/sun/j2ee/blueprints/uidgen/ejb/UniqueIdGeneratorEJB.java
+        line_start: 74
+        line_end: 85
+        excerpt: |
+          private CounterLocal getCounter(String name) {
+              try {
+                  CounterLocal counter = null;
+                  try {
+                      counter = clh.findByPrimaryKey(name);
+                  } catch (FinderException fe) {
+                      counter = clh.create(name);
+                  }
+                  return counter;
+              } catch (CreateException ce) {
+                  throw new EJBException("Could not create counter " + name + ". Error: " + ce.getMessage());
+              }
+          }
+      - path: legacy-source/app/src/components/uidgen/src/com/sun/j2ee/blueprints/uidgen/counter/ejb/CounterEJB.java
+        line_start: 150
+        line_end: 154
+        excerpt: |
+          public String ejbCreate(String name) throws CreateException {
+              setName(name);
+              setCounter(0);
+              return null;
+          }
+    stack_metadata:
+      ejb.bean: CounterEJB
+  - record_key: ORDPW-REQ-0003
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL persist each counter keyed by its unique name, so that issued numbers continue from the last value across requests.
+    plain_text: >
+      The last number used for each prefix is stored permanently, so numbering carries on where it left off.
+    technical_note: >
+      CounterEJB is a container-managed (CMP 2.x) entity with cmp-fields counter and name; name is the primary key (String). Table and column mapping is not in this module (deployment descriptors elsewhere).
+    interface: false
+    confidence: medium
+    confidence_basis: Declared in ejb-jar only; physical schema not visible in this module.
+    risk_class: operational
+    basis: ejb-jar CMP declaration.
+    traces:
+      - path: legacy-source/app/src/components/uidgen/src/ejb-jar.xml
+        line_start: 46
+        line_end: 65
+        excerpt: |
+          <entity>
+            <display-name>CounterEB</display-name>
+            <ejb-name>CounterEJB</ejb-name>
+            ...
+            <persistence-type>Container</persistence-type>
+            <prim-key-class>java.lang.String</prim-key-class>
+            <reentrant>False</reentrant>
+            <cmp-version>2.x</cmp-version>
+            <abstract-schema-name>Counter</abstract-schema-name>
+            <cmp-field> <field-name>counter</field-name> </cmp-field>
+            <cmp-field> <field-name>name</field-name> </cmp-field>
+            <primkey-field>name</primkey-field>
+    stack_metadata:
+      ejb.bean: CounterEJB
+      db.object: Counter
+  - record_key: ORDPW-BR-0004
+    kind: business-rule
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL perform each identifier request within a transaction (create-if-missing and increment together), and SHALL NOT allow the counter bean to be re-entered concurrently.
+    plain_text: >
+      Issuing an identifier is all-or-nothing, and two requests for the same prefix are not processed at the same instant, so duplicates are avoided.
+    technical_note: >
+      Container-transaction Required on UniqueIdGeneratorEJB.getUniqueId, CounterEJB.getNextValue and create; CounterEJB reentrant=False. Actual uniqueness under concurrency depends on container isolation/locking, not on code here.
+    interface: false
+    confidence: medium
+    confidence_basis: Declared transaction attributes only; concurrency guarantee is inferred from container behaviour, not read.
+    risk_class: operational
+    basis: ejb-jar container-transaction entries.
+    traces:
+      - path: legacy-source/app/src/components/uidgen/src/ejb-jar.xml
+        line_start: 232
+        line_end: 242
+        excerpt: |
+          <container-transaction>
+            <method>
+              <ejb-name>UniqueIdGeneratorEJB</ejb-name>
+              ...
+              <method-name>getUniqueId</method-name>
+            ...
+            <trans-attribute>Required</trans-attribute>
+    stack_metadata:
+      ejb.transaction: Required
+  - record_key: ORDPW-REQ-0005
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL issue order identifiers through this generator when an order is placed.
+    plain_text: >
+      New orders receive their identifiers from the shared identifier service.
+    technical_note: >
+      Consumer is OrderEJBAction in the petstore app (outside this module), which looks up ejb/UniqueIdGenerator. The prefix used is not read in this pass.
+    interface: false
+    confidence: low
+    confidence_basis: Only the caller's import and lookup were seen (grep), the call site was not read; the order-specific use is inferred.
+    risk_class: operational
+    basis: Caller reference to the generator.
+    traces:
+      - path: legacy-source/app/src/apps/petstore/src/com/sun/j2ee/blueprints/petstore/controller/ejb/actions/OrderEJBAction.java
+        line_start: 98
+        line_end: 99
+        excerpt: |
+          // get the UniqueIdGenerator EJB
+          UniqueIdGeneratorLocal uidgen = null;
+    stack_metadata:
+      ejb.bean: UniqueIdGeneratorEJB
+  - record_key: ORDPW-BR-0006
+    kind: business-rule
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL permit any caller to invoke identifier generation without a role check.
+    plain_text: >
+      Any part of the application may ask for a new identifier; no special permission is required.
+    technical_note: >
+      All method-permission entries are unchecked and security-identity uses the caller identity.
+    interface: false
+    confidence: medium
+    confidence_basis: One clear descriptor; no code-level check.
+    risk_class: operational
+    basis: ejb-jar method-permission unchecked.
+    traces:
+      - path: legacy-source/app/src/components/uidgen/src/ejb-jar.xml
+        line_start: 152
+        line_end: 195
+        excerpt: |
+          <method-permission>
+            <unchecked />
+            <method>
+              <ejb-name>UniqueIdGeneratorEJB</ejb-name>
+              ...
+              <method-name>getUniqueId</method-name>
+    stack_metadata:
+      ejb.bean: UniqueIdGeneratorEJB
+findings: []
+suspected_defects:
+  - capability_key: order-processing-workflow
+    record_keys: [ORDPW-REQ-0001]
+    severity: low
+    category: other
+    title: Counter is a 32-bit int with no overflow handling
+    description: >
+      The counter is an int incremented without bounds checking; after 2,147,483,647 it would go negative and produce identifiers that differ in form.
+    traces:
+      - path: legacy-source/app/src/components/uidgen/src/com/sun/j2ee/blueprints/uidgen/counter/ejb/CounterEJB.java
+        line_start: 142
+        line_end: 143
+        excerpt: |
+          public abstract int getCounter();
+          public abstract void setCounter(int counter);
