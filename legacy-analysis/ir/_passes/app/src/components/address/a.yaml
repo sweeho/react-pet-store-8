@@ -1,0 +1,100 @@
+records:
+  - record_key: CUST-ENT-0001
+    kind: entity
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL represent a postal address as street line 1, street line 2, city, state, zip code and country.
+    confidence: high
+    confidence_basis: >
+      Fields are declared in the bean's abstract accessors and again as container-managed fields in the deployment descriptor, and the DTD lists the same elements.
+    risk_class: operational
+    basis: Six persistent address fields are declared in code and descriptor.
+    plain_text: >
+      An address consists of two street lines, a city, a state, a zip code and a country.
+    technical_note: >
+      AddressEJB is a CMP 2.x entity bean (abstract schema Address) with six cmp-fields; Address.dtd allows an optional second street line and optional country.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/address/src/com/sun/j2ee/blueprints/address/ejb/AddressEJB.java
+        line_start: 53
+        line_end: 69
+        excerpt: |
+          public abstract String getStreetName1();
+          public abstract void setStreetName1(String streetName1);
+          public abstract String getStreetName2();
+          public abstract void setStreetName2(String streetName2);
+          public abstract String getCity();
+          public abstract void setCity(String city);
+          public abstract String getState();
+          public abstract void setState(String state);
+          public abstract String getZipCode();
+          public abstract void setZipCode(String zipCode);
+          public abstract String getCountry();
+          public abstract void setCountry(String country);
+      - path: legacy-source/app/src/components/address/src/com/sun/j2ee/blueprints/address/rsrc/schemas/Address.dtd
+        line_start: 38
+        line_end: 43
+        excerpt: |
+          <!ELEMENT Address (StreetName, StreetName?, City, State, ZipCode, Country?)>
+          <!ELEMENT StreetName (#PCDATA)>
+          <!ELEMENT City (#PCDATA)>
+          <!ELEMENT State (#PCDATA)>
+          <!ELEMENT ZipCode (#PCDATA)>
+          <!ELEMENT Country (#PCDATA)>
+    stack_metadata:
+      framework: EJB 2.0 CMP
+      ejb.bean: AddressEJB
+  - record_key: CUST-RULE-0001
+    kind: business-rule
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL store address fields exactly as supplied, with no validation, normalisation or required-field check at the address component level.
+    confidence: medium
+    confidence_basis: >
+      One clear place (create and copy methods assign values directly); absence of validation is inferred from reading the whole component, and callers were not examined.
+    risk_class: operational
+    basis: ejbCreate variants assign arguments straight to fields; no checks exist.
+    plain_text: >
+      The address record keeps whatever is entered; any checking of required parts is done elsewhere, if at all.
+    technical_note: >
+      ejbCreate(...) and ejbCreate(Address) call setters only; ejbCreate() creates an empty address. The DTD marks street 1, city, state and zip as required but no code enforces this here.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/address/src/com/sun/j2ee/blueprints/address/ejb/AddressEJB.java
+        line_start: 73
+        line_end: 103
+        excerpt: |
+          public Object ejbCreate(String streetName1, String streetName2, String city,
+                                  String state, String zipCode, String country) throws CreateException {
+                                    setStreetName1(streetName1);
+          public Object ejbCreate() throws CreateException {
+            return null;
+          }
+    stack_metadata:
+      ejb.bean: AddressEJB
+  - record_key: CUST-REQ-0001
+    kind: requirement
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL allow an address to be created from individual fields, by copying another address, or empty, and SHALL return its contents as a plain address data object.
+    confidence: medium
+    confidence_basis: One clear place; component callers not examined.
+    risk_class: operational
+    basis: Three create variants and getData in the bean.
+    plain_text: >
+      An address can be created from typed-in parts, copied from an existing address, or started blank, and its contents can be read back.
+    technical_note: >
+      ejbCreate overloads plus getData() building an Address value object; local interface only, no remote access.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/address/src/com/sun/j2ee/blueprints/address/ejb/AddressEJB.java
+        line_start: 87
+        line_end: 114
+        excerpt: |
+          public Object ejbCreate(Address address) throws CreateException {
+          public Address getData() {
+            Address address = new Address();
+    stack_metadata:
+      ejb.bean: AddressEJB
+findings: []
+suspected_defects: []
