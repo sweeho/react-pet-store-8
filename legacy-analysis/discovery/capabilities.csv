@@ -1,12 +1,11 @@
 capability_key,name,summary
-catalog-browsing,Catalog browsing and search,Categories products and items shown by locale with paging and keyword search
-shopping-cart,Shopping cart,Adding changing and removing items and the cart's totals and empty-cart rules
-customer-accounts,Customer accounts,Creating and editing customer profile contact info address and duplicate-account rules
-sign-on-security,Sign-on and access control,Authentication session timeout remembered username and role-based access to modules
-checkout-payment,Checkout and payment,Order entry form validation credit card acceptance and order submission
-order-approval,Order approval,Auto-approval limits per locale and the manual approval path in the admin client
-order-processing-workflow,Order processing workflow,Order lifecycle states JMS hand-offs and process manager transitions between modules
-supplier-fulfilment,Supplier fulfilment,Supplier purchase orders inventory checks shipment and invoicing back to the OPC
-customer-notifications,Customer notifications,Confirmation approval and completed-order mail and when each is sent
-localization,Localization,English Japanese and Chinese screens locale-specific data and limits
-batch-operations,Batch operations and reporting,Nightly backup extract aging inventory catalog check purge and health check jobs
+catalog-browsing,Catalog browsing and search,Categories/products/items per locale; paging; search; populate
+shopping-cart,Shopping cart,Cart contents and quantity/stock rules before checkout
+checkout-order-placement,Checkout and order placement,Order entry form validation; credit card and contact capture; empty-cart rejection
+customer-accounts,Customer accounts and sign-on,Account creation; duplicate accounts; sign-on; session timeout; profile editing
+order-approval,Order approval,Per-locale auto-approve limits and human approval in the admin client
+order-fulfilment,Order fulfilment and supplier processing,OPC workflow state machine; supplier PO; inventory; invoicing; completion
+customer-notifications,Customer notifications,Confirmation/approval/completion emails and their switches
+order-retention-reporting,Order extract purge and reporting,Nightly extract; 180-day purge; aging and inventory reports; catalog check
+platform-operations,Scheduling backup and health,Control-M schedule; DB backup; health check; environment configuration
+localization,Localization,"en_US, ja_JP and zh_CN screens, encodings and locale rules"

@@ -1,34 +1,26 @@
-# Discovery report SX-0001
+# Discovery SX-0002
 
-Legacy tree: Java Pet Store 1.3.2 (572 files) under `legacy-source/`. Stack: J2EE (EJB 2.x CMP/session/MDB, JMS, JSP with a custom WAF MVC framework), Cloudscape/Oracle DDL, shell batch jobs, Control-M schedule.
+Java Pet Store 1.3.2 (J2EE: EJB 2.x, JMS MDBs, JSP/custom WAF controller) plus ops layer: shell batch (`batch/`), SQL (`db/batch`), Control-M export (`scheduler/`), env config (`conf/`). 572 files, ~100k lines in total.
 
-## Modules (risk-ranked; see risk-scores.csv)
+## Modules, by risk
 
-- **apps/petstore** (18.5k LOC, 67 JSPs incl. zh/ja copies): storefront, the highest-volume rule surface (validation, cart, checkout, locale).
-- **apps/opc** (5.3k): order processing centre; MDBs and transition delegates; auto-approve limits (README and conf say US 500, JP 50000, needs confirmation in code/ejb-jar).
-- **apps/supplier** (4.2k), **components/supplierpo**: inventory check, shipping, invoice.
-- **components/purchaseorder, signon, catalog, customer, cart, creditcard**: core entities and rules.
-- **db/schema**: only declared constraints; CMP tables are added relational forms (README), so code and DDL may disagree.
-- **batch, db/batch, conf, scheduler**: added operational jobs with bare-literal thresholds (24h aging, stock below 500, 7-day backup retention, purge window). Check the purge SQL first.
-- **apps/admin**: Swing client for manual approval.
-- **waf**: framework plumbing; low business value, medium LOC.
+- **opc** (Order Processing Center): MDB chain, transition delegates, auto-approve limits in `conf/petstore.properties` (en_US 500, ja_JP 50000). Highest risk: workflow state machine and bare thresholds.
+- **purchaseorder / processmanager / supplierpo**: order state (`order_manager.status`: PENDING, APPROVED, COMPLETED, DENIED) and supplier order.
+- **batch + db/batch + scheduler**: 180-day purge (COMPLETED/DENIED), 24h aging report, extract, catalog check, backup retained 7 days, health check every 10 minutes. Undocumented rules in shell and SQL.
+- **petstore**: storefront, 25 English screens (zh/ja copies are localised duplicates, not counted), web.xml, mappings.xml, form validation in the web controller actions.
+- **creditcard, signon**: card validation, sign-on, 15 minute session timeout.
+- Mid and low: cart, catalog (per-locale DAO SQL), customer, admin client, supplier web, support libraries (waf, xmldocuments, servicelocator, etc.).
 
 ## Exclusions
 
-- Third-party/library: `app/src/lib/**` (JSTL TLDs, base64).
-- Build and packaging: `build.xml/.sh/.bat`, `setup.*`, `application.xml`, `sun-j2ee-ri.xml`, manifests.
-- Legal and HTML copyright pages, README.
-- Duplicated localized JSPs `docroot/zh`, `docroot/ja` (treat as one screen set; extract localization differences only).
-- Sample data: `populate/*.xml`, DTDs (read only for catalog rules).
-- Not present in the tree: `docs/`, `data/`, `vortex/expected-extraction.md` referenced by README.
+- `app/src/lib/jstl`, `app/src/lib/base64`: third-party libraries.
+- Build scripts (`build.xml`, `build.*`, `setup.*`), `COPYRIGHT/LICENSE/IMAGE_COPYRIGHT.html`, images, `docroot/populate` sample data and DTDs, tools/populate Java (data loading only).
+- `docroot/ja`, `docroot/zh`: localised copies of English JSPs; extract only locale-specific differences (capability `localization`).
+- Credentials in `conf/petstore.properties` are redacted; not a requirement.
 
-## Risks and flags
+## Caveats
 
-- Possible dead code: `opc/docroot/EntityCatalog.jsp`, `waf/docroot/*_test.jsp`, `clientstatetag_test.jsp`, util/tracer. Flag unresolved-reachability if used.
-- Thresholds as literals/env-entries in ejb-jar.xml and web.xml; conf/petstore.properties duplicates them and may disagree.
-- Two DDL variants (Cloudscape, Oracle) may differ.
-- conf contains a redacted credential; ignore.
-
-## Capabilities
-
-11 closed-list capabilities in capabilities.csv.
+- LOC is a line count of source/config files per module; `screens` counts English JSPs. `batch+db/batch+scheduler` is one row (one extraction unit).
+- Dependency graph is inferred, not from a full import analysis.
+- Possible dead code: the `supplier` and `admin` apps and EJB home/remote duplicates; reachability to be checked per module.
+- Two Cloudscape/Oracle DDL variants exist (`db/schema`); dispute candidates if constraints differ.
