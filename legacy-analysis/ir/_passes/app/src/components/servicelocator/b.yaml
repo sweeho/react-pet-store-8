@@ -1,0 +1,152 @@
+records:
+  - record_key: OPW-REQ-0001
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: The system SHALL resolve named infrastructure resources (EJB local homes, EJB remote homes, JMS queue and topic connection factories, queues, topics, data sources) by name through the naming service, and raise a single locator error when any lookup fails.
+    confidence: high
+    confidence_basis: Same lookup and error-wrapping pattern repeated in every method in two implementations (web and ejb tiers), plus javadoc. Reachability from callers not examined in this module.
+    risk_class: operational
+    basis: Each getter does ic.lookup(name), casts, and wraps NamingException or any Exception in ServiceLocatorException. No business rule; the module supports JMS hand-offs between modules.
+    plain_text: The application finds its shared technical resources, such as message queues and databases, by name, and reports one kind of error if a resource cannot be found.
+    technical_note: Service Locator pattern. web/ServiceLocator.java and ejb/ServiceLocator.java; both methods catch NamingException and Exception and rethrow ServiceLocatorException. Remote homes are narrowed with PortableRemoteObject.narrow.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/ejb/ServiceLocator.java
+        line_start: 83
+        line_end: 93
+        excerpt: |
+          public EJBLocalHome getLocalHome(String jndiHomeName) throws ServiceLocatorException {
+            EJBLocalHome home = null;
+            try {
+                home = (EJBLocalHome) ic.lookup(jndiHomeName);
+             } catch (NamingException ne) {
+                  throw new ServiceLocatorException(ne);
+             } catch (Exception e) {
+                  throw new ServiceLocatorException(e);
+             }
+             return home;
+          }
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/web/ServiceLocator.java
+        line_start: 175
+        line_end: 191
+        excerpt: |
+          public  Queue getQueue(String queueName) throws ServiceLocatorException {
+            Queue queue = null;
+            try {
+              if (cache.containsKey(queueName)) {
+                  queue = (Queue) cache.get(queueName);
+              } else {
+                  queue =(Queue)ic.lookup(queueName);
+                  cache.put(queueName, queue);
+              }
+            } catch (NamingException ne) {
+                  throw new ServiceLocatorException(ne);
+            } catch (Exception e) {
+                  throw new ServiceLocatorException(e);
+            }
+    stack_metadata:
+      framework: J2EE Service Locator
+      session.scope: n/a
+      jms.queue: resolved by caller-supplied name
+  - record_key: OPW-REQ-0002
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: The web-tier locator SHALL be a single shared instance that caches each resolved EJB home, connection factory, queue, topic and data source by name and reuses it on later requests.
+    confidence: high
+    confidence_basis: Singleton and cache are in code and stated in the class javadoc; two places.
+    risk_class: operational
+    basis: Static initializer creates one instance; cache is a synchronized map consulted before each lookup.
+    plain_text: On the web side, once a shared resource has been found it is remembered and reused rather than looked up again.
+    technical_note: web/ServiceLocator.java uses Collections.synchronizedMap(new HashMap()). containsKey-then-put is not atomic, so concurrent first lookups may both hit the naming service (benign). URL, boolean and string lookups are not cached.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/web/ServiceLocator.java
+        line_start: 59
+        line_end: 96
+        excerpt: |
+          * This implementation uses the "singleton" strategy and also the "caching"
+          * strategy.
+          * This implementation is intended to be used on the web tier and
+          * not on the ejb tier.
+          ...
+              cache = Collections.synchronizedMap(new HashMap());
+          ...
+          static public ServiceLocator getInstance() {
+            return me;
+          }
+    stack_metadata:
+      framework: J2EE Service Locator
+      session.scope: application (static singleton)
+  - record_key: OPW-REQ-0003
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: The EJB-tier locator SHALL perform a fresh naming lookup on every call, with no caching and no shared instance.
+    confidence: medium
+    confidence_basis: One clear place (ejb/ServiceLocator.java); absence of cache is read from code, not documented.
+    risk_class: operational
+    basis: Public constructor, no cache field; every getter calls ic.lookup directly.
+    plain_text: Inside the business tier, shared resources are looked up each time they are needed instead of being remembered.
+    technical_note: ejb/ServiceLocator.java has a public constructor and an unused static field 'me'.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/ejb/ServiceLocator.java
+        line_start: 62
+        line_end: 74
+        excerpt: |
+          private InitialContext ic;
+
+          private static ServiceLocator me;
+
+          public ServiceLocator() throws ServiceLocatorException  {
+            try {
+              ic = new InitialContext();
+    stack_metadata:
+      framework: J2EE Service Locator
+  - record_key: CNT-REQ-0001
+    kind: requirement
+    capability_key: customer-notifications
+    requirement: The system SHALL be able to read deployment-configured environment entries as URL, boolean or string values by name, including boolean flags such as the one that controls sending confirmation mail.
+    confidence: low
+    confidence_basis: Only a javadoc mention of SEND_CONFIRMATION_MAIL; the locator itself does not know which flags exist. Filed under customer-notifications as closest fit; consumers not examined in this module.
+    risk_class: operational
+    basis: getBoolean javadoc names SEND_CONFIRMATION_MAIL. Values are read via ic.lookup and cast, so a missing or wrong-typed entry yields a locator error.
+    plain_text: Settings such as whether to send confirmation emails are read from the deployment configuration.
+    technical_note: getBoolean/getString/getUrl in both implementations are uncached lookups of env-entry JNDI names.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/web/ServiceLocator.java
+        line_start: 274
+        line_end: 288
+        excerpt: |
+          /**
+           * @return the boolean value corresponding
+           * to the env entry such as SEND_CONFIRMATION_MAIL property.
+           */
+          public boolean getBoolean(String envName) throws ServiceLocatorException {
+            Boolean bool = null;
+            try {
+              bool = (Boolean)ic.lookup(envName);
+    stack_metadata:
+      framework: J2EE env-entry
+findings: []
+suspected_defects:
+  - capability_key: order-processing-workflow
+    record_keys: [OPW-REQ-0002]
+    severity: medium
+    category: error-swallowed
+    title: Web locator initialization failure is only printed
+    description: >
+      If the singleton cannot be created, the static initializer prints the error to stderr and leaves the instance null; getInstance() then returns null and callers fail later with a null pointer rather than a locator error.
+    traces:
+      - path: legacy-source/app/src/components/servicelocator/src/com/sun/j2ee/blueprints/servicelocator/web/ServiceLocator.java
+        line_start: 74
+        line_end: 81
+        excerpt: |
+          static {
+            try {
+              me = new ServiceLocator();
+            } catch(ServiceLocatorException se) {
+              System.err.println(se);
+              se.printStackTrace(System.err);
+            }
+          }
