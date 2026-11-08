@@ -68,8 +68,9 @@ The system SHALL allow a line item to be created from explicit values or from an
 
 ### Requirement: Line item price precision
 
-Recovered from: SHOP-BR-0004
 The system SHALL store line item unit prices as single-precision floating-point values, as the legacy system does; this precision is to be confirmed by the business owner.
+
+Recovered from: SHOP-BR-0004
 
 #### Scenario: Line item price precision
 
