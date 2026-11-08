@@ -1,0 +1,151 @@
+recommendations:
+  - record_key: CATALOG-BROWSING-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATALOG-BROWSING-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATALOG-BROWSING-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATALOG-BROWSING-REQ-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATALOG-BROWSING-RULE-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATALOG-BROWSING-REQ-0006
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATALOG-BROWSING-RULE-0007
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATALOG-BROWSING-REQ-0009
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATA-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATA-BR-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATA-BR-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATA-REQ-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATA-BR-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATA-REQ-0006
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATA-REQ-0008
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATALOG-ENT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATALOG-RULE-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CAT-ENT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CAT-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CAT-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATALOG-BROWSING-ENT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATB-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATB-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATB-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATB-REQ-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATB-REQ-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATB-REQ-0006
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATB-REQ-0008
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: CATB-REQ-0009
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
+  - record_key: ITEM-ENT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A, B and C agree on this behaviour where they overlap and it traces to DAO code, SQL configuration or DDL; no test or document was seen to confirm it.
