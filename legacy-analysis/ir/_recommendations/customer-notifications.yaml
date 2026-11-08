@@ -1,0 +1,101 @@
+recommendations:
+  - record_key: CUSTNOTIF-INT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CN-WF-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CUSTNOTIF-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CN-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CUSTNOTIF-RULE-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CN-BR-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CUSTNOTIF-RULE-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CN-BR-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CN-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CUSN-INT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CUSTNOT-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: NOTIF-RULE-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: NOTIF-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CUSTNOT-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CUSTNOT-BR-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CUSTNOT-BR-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: NOTI-REQ-0001
+    recommendation: accept
+    confidence: low
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CUSN-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: CNT-REQ-0001
+    recommendation: accept
+    confidence: low
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
+  - record_key: OPW-BR-0005
+    recommendation: accept
+    confidence: low
+    reason: >
+      Code reading in the mailer and opc modules supports it; duplicates across passes agree. Whether mail is enabled in production (conf says off) goes to Intent for the Business Owner.
