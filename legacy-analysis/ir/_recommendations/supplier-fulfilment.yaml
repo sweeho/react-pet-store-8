@@ -1,0 +1,320 @@
+recommendations:
+  - record_key: BATCH-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: BATCH-REQ-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: CUSN-INT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: CUSTNOT-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: INV-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: OPW-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: OPW-WORKFLOW-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: ORDER-PROCESSING-WORKFLOW-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SHOP-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPF-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPF-ENTY-0011
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPF-INT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPF-INT-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPF-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPF-RULE-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPF-RULE-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPF-RULE-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPF-RULE-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPF-RULE-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Hard-coded greeting text 'Dear PetStore Customer' is code-only; confirm with the Business Owner that it is intended, not a legacy defect.
+  - record_key: SUPF-RULE-0008
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPF-SCRN-0010
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPF-WF-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPF-WF-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPF-WKFL-0007
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPFUL-INT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPFUL-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPFUL-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPFUL-REQ-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPFUL-RULE-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPFUL-WF-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPL-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPL-ENT-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPP-REQ-0001
+    recommendation: edit
+    confidence: low
+    reason: >
+      Conf passes disagree on confidence and the DTD validation in the purchase-order and supplier-order components contradicts a blanket no-validation reading; confirm what production runs. Conflict goes to Intent for the Business Owner.
+    edited_requirement: >
+      The system SHALL validate supplier order XML for well-formedness and SHALL NOT validate supplier order or invoice XML against XSD schemas, while DTD validation on read of purchase orders and supplier orders remains as documented.
+  - record_key: SUPPLIER-BR-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-BR-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-ENT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      DDL is the highest-confidence source; note the PENDING/COMPLETED restriction conflicts with the code status set (see SUPPLIER-FULFILMENT-WF-0001).
+  - record_key: SUPPLIER-ENTITY-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-FULFILMENT-BR-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-FULFILMENT-BR-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-FULFILMENT-BR-0003
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-FULFILMENT-BUSINESS-RULE-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-FULFILMENT-BUSINESS-RULE-0003
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-FULFILMENT-BUSINESS-RULE-0006
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-FULFILMENT-BUSINESS-RULE-0007
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-FULFILMENT-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-FULFILMENT-ENTITY-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-FULFILMENT-INT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-FULFILMENT-REQ-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-FULFILMENT-REQUIREMENT-0004
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-FULFILMENT-REQUIREMENT-0005
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-FULFILMENT-WF-0001
+    recommendation: edit
+    confidence: low
+    reason: >
+      Java defines PENDING, APPROVED, DENIED, COMPLETED but the database CHECK only allows PENDING or COMPLETED, and the invoice flow sets SHIPPED_PART elsewhere. Business Owner should confirm which statuses are persisted; goes to Intent.
+    edited_requirement: >
+      Confirm the persisted status set before approving.
+  - record_key: SUPPLIER-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes agree on behaviour; the key is shared by several passes, so check the SME reviews the purchase order creation record.
+  - record_key: SUPPLIER-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-REQ-0004
+    recommendation: accept
+    confidence: low
+    reason: >
+      Unrestricted caller access is what the descriptor says; whether it is right is the Business Owner's decision in the defect register.
+  - record_key: SUPPLIER-RULE-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLIER-RULE-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLY-BUSINESS-RULE-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLY-BUSINESS-RULE-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLY-ENTITY-0003
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLY-INTEGRATION-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: SUPPLY-INTEGRATION-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
+  - record_key: WORKFLOW-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Passes A and B (and the DDL where present) agree with the cited code; no document conflict found.
