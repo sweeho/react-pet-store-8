@@ -1,0 +1,135 @@
+records:
+  - record_key: CHK-ENT-0001
+    kind: entity
+    capability_key: checkout-order-placement
+    requirement: >
+      The system SHALL store a credit card as three text attributes: card number, card type and expiry date.
+    confidence: high
+    confidence_basis: >
+      Stated in the CMP field declarations in the deployment descriptor, the entity bean accessors and the XML DTD. No document mentions credit cards, so none was available to cross-check.
+    risk_class: regulated
+    basis: Three CMP fields and matching DTD elements; no length, format or Luhn checks anywhere in the component.
+    plain_text: >
+      A credit card record holds the card number, the card type and the expiry date.
+    technical_note: >
+      CreditCardEJB is a CMP 2.x entity bean (abstract schema CreditCard). The DTD CreditCard.dtd requires CardNumber, CardType and ExpiryDate elements. The card number is held as a plain string, with no masking or encryption in this component.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/creditcard/src/ejb-jar.xml
+        line_start: 55
+        line_end: 68
+        excerpt: |
+          <cmp-version>2.x</cmp-version>
+          <abstract-schema-name>CreditCard</abstract-schema-name>
+          <cmp-field>
+            <description>no description</description>
+            <field-name>expiryDate</field-name>
+      - path: legacy-source/app/src/components/creditcard/src/com/sun/j2ee/blueprints/creditcard/rsrc/schemas/CreditCard.dtd
+        line_start: 38
+        line_end: 41
+        excerpt: |
+          <!ELEMENT CreditCard (CardNumber, CardType, ExpiryDate)>
+          <!ELEMENT CardNumber (#PCDATA)>
+          <!ELEMENT CardType (#PCDATA)>
+          <!ELEMENT ExpiryDate (#PCDATA)>
+    stack_metadata:
+      framework: EJB 2.x CMP
+      ejb.bean: CreditCardEJB
+      ejb.transaction: Required
+  - record_key: CHK-RULE-0002
+    kind: business-rule
+    capability_key: checkout-order-placement
+    requirement: >
+      The system SHALL store the expiry date as a single text value in "month/year" form and derive the month as the text before the first slash and the year as the text after it.
+    confidence: medium
+    confidence_basis: >
+      One clear place (the bean accessors). The "month/year" format is inferred from the slash parsing; no validator or document states it.
+    risk_class: regulated
+    basis: getExpiryMonth and getExpiryYear split the stored expiry string on the first slash.
+    plain_text: >
+      A card's expiry is kept as one entry such as 07/2012, and the month and year are read from either side of the slash.
+    technical_note: >
+      CreditCardEJB.getExpiryMonth and getExpiryYear use indexOf("/"). No range or format validation is applied to either part.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/creditcard/src/com/sun/j2ee/blueprints/creditcard/ejb/CreditCardEJB.java
+        line_start: 88
+        line_end: 107
+        excerpt: |
+          public String getExpiryMonth() {
+            String dateString = getExpiryDate();
+            if (dateString != null) {
+              // get the slash and return the text before it
+              int slashStart = dateString.indexOf("/");
+              if (slashStart != -1) return dateString.substring(0,slashStart);
+            }
+            return "01";
+          }
+    stack_metadata:
+      ejb.bean: CreditCardEJB
+  - record_key: CHK-RULE-0003
+    kind: business-rule
+    capability_key: checkout-order-placement
+    requirement: >
+      GIVEN a stored expiry date that is absent or contains no slash, WHEN the expiry month or year is requested, THEN the system SHALL return month "01" and year "2010" respectively.
+    confidence: low
+    confidence_basis: >
+      Bare literal defaults in one place, with no comment, test or document explaining them. Whether they are reachable in live flows is not established here.
+    risk_class: regulated
+    basis: Hard-coded fallbacks in the accessors. No authoritative source found.
+    plain_text: >
+      If a card's expiry is missing or not in the expected form, the month is treated as January and the year as 2010.
+    technical_note: >
+      Fallbacks are literals in CreditCardEJB.getExpiryMonth ("01") and getExpiryYear ("2010"). The year default is long past, so a malformed expiry reads as an expired card.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/creditcard/src/com/sun/j2ee/blueprints/creditcard/ejb/CreditCardEJB.java
+        line_start: 95
+        line_end: 106
+        excerpt: |
+          return "01";
+          ...
+          return "2010";
+    stack_metadata:
+      ejb.bean: CreditCardEJB
+  - record_key: CHK-REQ-0004
+    kind: requirement
+    capability_key: checkout-order-placement
+    requirement: >
+      The system SHALL create a credit card either from the three values (number, type, expiry) or by copying them from an existing credit card data object, and SHALL return the three values as a data object on request.
+    confidence: medium
+    confidence_basis: >
+      Clear in one class; create methods are copy-through with no checks. Callers are outside this shard.
+    risk_class: regulated
+    basis: ejbCreate overloads copy values with no validation; getData returns a copy.
+    plain_text: >
+      A card can be recorded from its number, type and expiry, and those details can be read back together.
+    technical_note: >
+      Three ejbCreate overloads (values, CreditCard, no-arg) and getData(). Creation accepts nulls and malformed values without raising CreateException. All business methods run under container transaction Required.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/creditcard/src/com/sun/j2ee/blueprints/creditcard/ejb/CreditCardEJB.java
+        line_start: 62
+        line_end: 115
+        excerpt: |
+          public Object ejbCreate(String cardNumber, String cardType,
+                                  String expiryDate) throws CreateException {
+                                    setCardNumber(cardNumber);
+                                    setCardType(cardType);
+                                    setExpiryDate(expiryDate);
+    stack_metadata:
+      ejb.bean: CreditCardEJB
+      ejb.transaction: Required
+suspected_defects:
+  - capability_key: checkout-order-placement
+    record_keys: [CHK-RULE-0003]
+    severity: medium
+    category: other
+    title: Malformed expiry silently defaults to January 2010
+    description: >
+      A missing or slash-less expiry is silently read as 01/2010, a past date, instead of being rejected. The component also performs no card number or expiry validation.
+    traces:
+      - path: legacy-source/app/src/components/creditcard/src/com/sun/j2ee/blueprints/creditcard/ejb/CreditCardEJB.java
+        line_start: 88
+        line_end: 107
+findings: []
