@@ -1,0 +1,632 @@
+records:
+  - record_key: LOC-REQ-0001
+    kind: requirement
+    capability_key: localization
+    requirement: >
+      The system SHALL assign the configured default locale (en_US) to a user session on its first request when no locale is yet held for that session.
+    confidence: high
+    confidence_basis: >
+      Enforced in the servlet request path and the default is declared in deployment configuration (two places).
+    risk_class: presentational
+    basis: >
+      The front controller sets the session locale to the default when absent; the default comes from the servlet init parameter.
+    plain_text: >
+      A visitor who has not chosen a language sees the site in US English.
+    technical_note: >
+      MainServlet.doProcess seeds session attribute WebKeys.LOCALE from init-param default_locale (en_US in web.xml).
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/controller/web/MainServlet.java
+        line_start: 111
+        line_end: 113
+        excerpt: |
+          if (request.getSession().getAttribute(WebKeys.LOCALE) == null) {
+              request.getSession().setAttribute(WebKeys.LOCALE, defaultLocale);
+          }
+      - path: legacy-source/app/src/waf/src/docroot/WEB-INF/web.xml
+        line_start: 57
+        line_end: 60
+        excerpt: |
+          <init-param>
+            <param-name>default_locale</param-name>
+            <param-value>en_US</param-value>
+          </init-param>
+    stack_metadata:
+      framework: WAF MainServlet
+      session.scope: session
+
+  - record_key: LOC-REQ-0002
+    kind: requirement
+    capability_key: localization
+    requirement: >
+      The system SHALL change the session locale to the one named in the "locale" request parameter when that value parses to a locale, and SHALL otherwise fail the request with an "Unable to change language" error.
+    confidence: high
+    confidence_basis: >
+      Action code, URL mapping and a demo page all show the behaviour.
+    risk_class: presentational
+    basis: >
+      The change-locale action parses the parameter, stores the locale in the session and raises an event; null parse results in an exception.
+    plain_text: >
+      A user can switch the display language. If the requested language is not understood, the switch is refused with an error.
+    technical_note: >
+      ChangeLocaleHTMLAction writes session attribute com.sun.j2ee.blueprints.waf.LOCALE, which is a different key string from the one MainServlet reads via WebKeys.LOCALE unless WebKeys defines them identically (not verified in this shard's reading of WebKeys). Mapped at changelocale.do and changeclientchachelinklocale.do (sic).
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/controller/web/action/actions/ChangeLocaleHTMLAction.java
+        line_start: 241
+        line_end: 251
+        excerpt: |
+          String localeString = request.getParameter("locale");
+          Locale locale = I18nUtil.getLocaleFromString(localeString);
+          if (locale != null) {
+              session.setAttribute(LOCALE,locale);
+              return new ChangeLocaleEvent(locale);
+          } else {
+              throw new HTMLActionException("ChangeLocaleAction: Unable to change language to " + localeString);
+          }
+      - path: legacy-source/app/src/waf/src/docroot/WEB-INF/mappings.xml
+        line_start: 48
+        line_end: 50
+        excerpt: |
+          <url-mapping url="changelocale.do" screen="locale_change_success.screen" >
+              <web-action-class>com.sun.j2ee.blueprints.waf.controller.web.action.actions.ChangeLocaleHTMLAction</web-action-class>
+          </url-mapping>
+    stack_metadata:
+      framework: WAF
+      session.scope: session
+
+  - record_key: LOC-BR-0003
+    kind: business-rule
+    capability_key: localization
+    requirement: >
+      GIVEN a locale string, the system SHALL interpret "default" as the platform default locale, "language_country" as a locale with that language and country, and SHALL reject (return no locale for) a null string or one without an underscore. A third "_variant" segment is never applied.
+    confidence: medium
+    confidence_basis: >
+      One clear place; the variant handling is dead (variantIndex is never assigned), derived by reading the code, not tested.
+    risk_class: presentational
+    basis: >
+      I18nUtil.getLocaleFromString parsing logic.
+    plain_text: >
+      Language choices are written like "ja_JP". Anything not in that form is not accepted.
+    technical_note: >
+      variantIndex is initialised to -1 and never reassigned, so variant is always null. For "a_b_c" country becomes null because countryIndex != -1 skips the country assignment, yielding new Locale("a", null), which throws NullPointerException in the JDK constructor.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/util/I18nUtil.java
+        line_start: 481
+        line_end: 507
+        excerpt: |
+          if (localeString == null) return null;
+          if (localeString.toLowerCase().equals("default")) return Locale.getDefault();
+          int languageIndex = localeString.indexOf('_');
+          if (languageIndex  == -1) return null;
+          int variantIndex = -1;
+          if (countryIndex != -1) countryIndex = localeString.indexOf('_', countryIndex +1);
+    stack_metadata:
+      framework: WAF util
+
+  - record_key: LOC-BR-0004
+    kind: business-rule
+    capability_key: localization
+    requirement: >
+      The system SHALL select screen definitions for the locale given in the "locale" request parameter, else the session locale, and SHALL fall back to the default locale's definitions when that locale has none loaded; for a screen absent from the chosen locale it SHALL use the default locale's definition, and where none exists it SHALL print "Definition for screen <name> not found".
+    confidence: high
+    confidence_basis: >
+      Explicit code with fallbacks at three points, plus init-param configuration listing locales.
+    risk_class: presentational
+    basis: >
+      TemplateServlet.process locale resolution and screen lookup; locales init-param lists only en_US.
+    plain_text: >
+      Pages are shown in the visitor's language when a translation exists; otherwise the English page is shown. The deployed configuration only has English loaded.
+    technical_note: >
+      locales init-param = en_US only, so ja_JP/zh_CN screen definitions are never loaded by this web.xml. A missing default-locale Screens would raise NullPointerException at line 240.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/view/template/com/sun/j2ee/blueprints/waf/view/template/TemplateServlet.java
+        line_start: 157
+        line_end: 166
+        excerpt: |
+          String languageParam = request.getParameter("locale");
+          // The language when specified as a parameter overrides the language set in the session
+          if (languageParam != null) {
+              localeString = languageParam;
+          } else if (request.getSession().getAttribute(WebKeys.LOCALE) != null) {
+              localeString = ((Locale)request.getSession().getAttribute(WebKeys.LOCALE)).toString();
+          }
+          if (allScreens.get(localeString) == null) {
+             localeString = defaultLocale;
+          }
+      - path: legacy-source/app/src/waf/src/view/template/com/sun/j2ee/blueprints/waf/view/template/TemplateServlet.java
+        line_start: 233
+        line_end: 252
+        excerpt: |
+          if (screenName != null){
+              Screens localeScreens = (Screens)allScreens.get(localeString);
+              if (localeScreens != null) screen = (Screen)localeScreens.getScreen(screenName);
+              // default to the default locale screen if it was not defined in the locale specific definitions
+              if (screen == null) {
+          out.println("<font size=+4>Error:</font><br>Definition for screen " + screenName + " not found");
+      - path: legacy-source/app/src/waf/src/docroot/WEB-INF/web.xml
+        line_start: 68
+        line_end: 71
+        excerpt: |
+          <init-param>
+            <param-name>locales</param-name>
+            <param-value>en_US</param-value>
+          </init-param>
+    stack_metadata:
+      framework: WAF TemplateServlet
+      session.scope: session
+
+  - record_key: LOC-REQ-0005
+    kind: requirement
+    capability_key: localization
+    requirement: >
+      The system SHALL format currency and numbers according to a given locale and a given number of decimal places.
+    confidence: medium
+    confidence_basis: >
+      One clear place (utility); callers were not traced in this shard.
+    risk_class: financial
+    basis: >
+      I18nUtil.formatCurrency / formatNumber set minimum and maximum fraction digits to the precision on a locale-specific formatter, optionally applying a pattern.
+    plain_text: >
+      Prices and numbers are shown using the conventions of the customer's language and region.
+    technical_note: >
+      Overloads with a pattern call applyPattern after setting digits, so the pattern overrides the precision. Uses double arithmetic and the JDK default rounding mode.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/util/I18nUtil.java
+        line_start: 413
+        line_end: 418
+        excerpt: |
+          public static String formatCurrency(double amount, int precision, Locale locale){
+                NumberFormat nf = NumberFormat.getCurrencyInstance(locale);
+                nf.setMinimumFractionDigits(precision);
+                nf.setMaximumFractionDigits(precision);
+                return nf.format(amount);
+          }
+    stack_metadata:
+      framework: WAF util
+
+  - record_key: CAT-REQ-0006
+    kind: requirement
+    capability_key: catalog-browsing
+    requirement: >
+      The system SHALL split a keyword search string into words using the word-boundary rules of the user's locale, discarding blank tokens.
+    confidence: medium
+    confidence_basis: >
+      One clear place; callers not traced in this shard.
+    risk_class: operational
+    basis: >
+      I18nUtil.parseKeywords(String, Locale) uses a locale BreakIterator; failure returns null and is only logged.
+    plain_text: >
+      Search words are separated in a way that suits the language, so Japanese and Chinese searches work as well as English.
+    technical_note: >
+      On any Throwable the method logs and returns null, so callers must handle null. The overload without a locale uses the JVM default locale.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/util/I18nUtil.java
+        line_start: 449
+        line_end: 468
+        excerpt: |
+          public static Vector parseKeywords(String keywordString, Locale locale){
+              if (keywordString != null){
+                  Vector keywords = new Vector();
+                  BreakIterator breakIt = BreakIterator.getWordInstance(locale);
+                  if (!word.trim().equals("")) keywords.addElement(word);
+    stack_metadata:
+      framework: WAF util
+
+  - record_key: SIGN-REQ-0007
+    kind: requirement
+    capability_key: sign-on-security
+    requirement: >
+      The system SHALL expire an idle web session after 30 minutes.
+    confidence: medium
+    confidence_basis: >
+      One clear place (deployment descriptor); a configured value, not a bare literal in code.
+    risk_class: regulated
+    basis: >
+      web.xml session-config.
+    plain_text: >
+      A user who is inactive for 30 minutes is logged out and the session is discarded.
+    technical_note: >
+      session-timeout is in minutes.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/docroot/WEB-INF/web.xml
+        line_start: 100
+        line_end: 102
+        excerpt: |
+          <session-config>
+            <session-timeout>30</session-timeout>
+          </session-config>
+    stack_metadata:
+      framework: servlet container
+      session.scope: session
+
+  - record_key: ORD-WF-0008
+    kind: workflow
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL route every browser request ending in ".do" through a single front controller that resolves the last path segment to a configured URL mapping, runs the mapped action if any, forwards any resulting event to the session's EJB controller, and then forwards the browser to the mapped screen.
+    confidence: high
+    confidence_basis: >
+      Request path is visible in the servlet, the processor, the screen flow manager and declared servlet mappings.
+    risk_class: operational
+    basis: >
+      MainServlet.doProcess -> RequestProcessor.processRequest -> ScreenFlowManager.forwardToNextScreen; *.do mapped in web.xml.
+    plain_text: >
+      Every user action goes through one common entry point that does the work and then shows the next page.
+    technical_note: >
+      A URL not present in the mappings runs no action; if its screen is null a RuntimeException "Screen not found" results. An action class that fails to load is only logged and the request proceeds as if there were no action. In ScreenFlowManager, the lastPathSeparator != -1 test is always true.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/controller/web/MainServlet.java
+        line_start: 114
+        line_end: 116
+        excerpt: |
+          try {
+                   getRequestProcessor().processRequest(request);
+                   getScreenFlowManager().forwardToNextScreen(request,response);
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/controller/web/RequestProcessor.java
+        line_start: 126
+        line_end: 143
+        excerpt: |
+          URLMapping urlMapping = getURLMapping(selectedURL);
+          HTMLAction action = getAction(urlMapping);
+          if (action != null) {
+              action.setServletContext(request.getSession().getServletContext());
+              action.doStart(request);
+              ev = action.perform(request);
+          action.doEnd(request, eventResponse);
+      - path: legacy-source/app/src/waf/src/docroot/WEB-INF/web.xml
+        line_start: 95
+        line_end: 98
+        excerpt: |
+          <servlet-mapping>
+            <servlet-name>webTierEntryPoint</servlet-name>
+            <url-pattern>*.do</url-pattern>
+          </servlet-mapping>
+    stack_metadata:
+      framework: WAF MainServlet
+      session.scope: session
+
+  - record_key: ORD-WF-0009
+    kind: workflow
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL hand an event raised by a web action to the session's controller component, which SHALL look up the handler class named in the event, create it once per controller instance and run its start, perform and end steps; an event with no handler class SHALL produce no response.
+    confidence: medium
+    confidence_basis: >
+      One clear implementation (StateMachine) supported by the event-mapping lookup in the request processor.
+    risk_class: operational
+    basis: >
+      RequestProcessor sets the EJB action class name from the event mapping; StateMachine.processEvent executes it.
+    plain_text: >
+      Actions that need back-end processing pass a message to a back-end component that carries it out.
+    technical_note: >
+      If the handler class fails to load the error is logged and null is returned (error swallowed). The handler cache is a plain HashMap in a stateful-style session bean.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/controller/ejb/StateMachine.java
+        line_start: 93
+        line_end: 115
+        excerpt: |
+          String actionName = ev.getEJBActionClassName();
+          EventResponse response = null;
+          if (actionName  != null) {
+          action = (EJBAction)Class.forName(actionName).newInstance();
+          System.err.println("StateMachine: error loading " + actionName + " :" + ex);
+          response = action.perform(ev);
+          return response;
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/controller/web/RequestProcessor.java
+        line_start: 133
+        line_end: 141
+        excerpt: |
+          if (ev != null) {
+             // set the ejb action class name on the event
+              EventMapping eventMapping = getEventMapping(ev);
+              if (eventMapping != null) {
+                      ev.setEJBActionClassName(eventMapping.getEJBActionClassName());
+              }
+    stack_metadata:
+      framework: WAF
+      ejb.bean: EJBControllerLocalEJB
+      session.scope: stateful-style session bean
+
+  - record_key: LOC-WF-0010
+    kind: workflow
+    capability_key: localization
+    requirement: >
+      The system SHALL record the chosen locale in the session controller's state when a change-locale event is processed.
+    confidence: medium
+    confidence_basis: >
+      One clear handler; however it is only reachable if the event-mapping key matches (see suspected defect), so reachability is disputed.
+    dispute:
+      reason: unresolved-reachability
+      detail: >
+        mappings.xml registers the EJB action under event class com.sun.j2ee.blueprints.waf.event.events.ChangeLocaleEvent, but the event class in the source tree is com.sun.j2ee.blueprints.waf.event.impl.ChangeLocaleEvent. The lookup key is the runtime class name, so the mapping would not match and the handler would never run. A runtime trace or a package listing of the deployed jar would settle it.
+    risk_class: operational
+    basis: >
+      ChangeLocaleEJBAction stores the locale under the key "locale" in the state machine.
+    plain_text: >
+      The back end remembers the user's chosen language.
+    technical_note: >
+      machine.setAttribute("locale", ...) returns null as response.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/controller/ejb/action/actions/ChangeLocaleEJBAction.java
+        line_start: 306
+        line_end: 310
+        excerpt: |
+          public EventResponse perform(Event e) throws EventException {
+              ChangeLocaleEvent ce = (ChangeLocaleEvent)e;
+              machine.setAttribute("locale", ce.getLocale());
+              return null;
+          }
+      - path: legacy-source/app/src/waf/src/docroot/WEB-INF/mappings.xml
+        line_start: 43
+        line_end: 46
+        excerpt: |
+          <event-mapping>
+              <event-class>com.sun.j2ee.blueprints.waf.event.events.ChangeLocaleEvent</event-class>
+              <ejb-action-class>com.sun.j2ee.blueprints.waf.controller.ejb.action.actions.ChangeLocaleEJBAction</ejb-action-class>
+          </event-mapping>
+    stack_metadata:
+      framework: WAF
+      ejb.bean: EJBControllerLocalEJB
+
+  - record_key: ORD-WF-0011
+    kind: workflow
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL, when an unhandled exception occurs while processing a request, forward to the error screen mapped for the exception's class or a superclass, and SHALL otherwise fail the request with a general server error.
+    confidence: medium
+    confidence_basis: >
+      Code is clear, but the only configured exception mapping names a class in a different (petstore) package, so live behaviour for WAF exceptions is unclear.
+    risk_class: operational
+    basis: >
+      MainServlet catch block and ScreenFlowManager.getExceptionScreen with isAssignableFrom matching.
+    plain_text: >
+      When something goes wrong the user is shown an error page rather than a technical failure, where an error page has been set up for that kind of problem.
+    technical_note: >
+      The exception is placed in the request as javax.servlet.jsp.jspException. mappings.xml maps com.sun.j2ee.blueprints.petstore.controller.exceptions.GeneralFailureException, whereas the WAF class is com.sun.j2ee.blueprints.waf.exceptions.GeneralFailureException.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/controller/web/MainServlet.java
+        line_start: 117
+        line_end: 127
+        excerpt: |
+          } catch (Throwable ex) {
+              String className = ex.getClass().getName();
+              String nextScreen = getScreenFlowManager().getExceptionScreen(ex);
+              request.setAttribute("javax.servlet.jsp.jspException", ex);
+              if (nextScreen == null) {
+                  throw new ServletException("MainServlet: unknown exception: " + className);
+              }
+              context.getRequestDispatcher(nextScreen).forward(request, response);
+      - path: legacy-source/app/src/waf/src/docroot/WEB-INF/mappings.xml
+        line_start: 57
+        line_end: 57
+        excerpt: |
+          <exception-mapping exception-class="com.sun.j2ee.blueprints.petstore.controller.exceptions.GeneralFailureException" screen="error.screen"/>
+    stack_metadata:
+      framework: WAF
+
+  - record_key: CAT-SCR-0012
+    kind: screen
+    capability_key: localization
+    requirement: >
+      The system SHALL render each screen by assembling a common page template with named parts (title, banner, body, footer) defined per screen and locale.
+    confidence: medium
+    confidence_basis: >
+      Screen definitions and the template servlet agree; the definitions file in WEB-INF/xml is Pet Store content.
+    risk_class: presentational
+    basis: >
+      screendefinitions.xml defines MAIN, ERROR, SEARCH, CART, CATALOG etc. each with parameter keys; template.jsp inserts them.
+    plain_text: >
+      All pages share the same layout with a header banner, body area and footer.
+    technical_note: >
+      Screen definitions in docroot/WEB-INF/xml/screendefinitions.xml are not the file TemplateServlet loads (/WEB-INF/screendefinitions_en_US.xml). Filed under localization as the closest listed capability.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/docroot/WEB-INF/xml/screendefinitions.xml
+        line_start: 43
+        line_end: 53
+        excerpt: |
+          <template>/template.jsp</template>
+          <screen>
+            <screen-name>MAIN</screen-name>
+            <parameter key="HtmlTitle" value="Welcome to Java Pet Store Demo" direct="true"/>
+            <parameter key="HtmlBanner" value="/banner.jsp" direct="false"/>
+            <parameter key="HtmlBody" value="/index.jsp" direct="false"/>
+          </screen>
+    stack_metadata:
+      framework: WAF TemplateServlet
+      jsp.page: template.jsp
+
+  - record_key: ORD-REQ-0013
+    kind: requirement
+    capability_key: shopping-cart
+    requirement: >
+      The system SHALL support returning to the previously displayed screen via the "PREVIOUS" screen name, optionally restoring that screen's request parameters and attributes when the corresponding caching switches are enabled.
+    confidence: medium
+    confidence_basis: >
+      One clear place; both caching switches are false in deployed configuration, so restore is off.
+    risk_class: presentational
+    basis: >
+      TemplateServlet stores last screen name in session and restores on PREVIOUS; web.xml sets both cache flags to false.
+    plain_text: >
+      A "back to where I was" link returns the user to the last page they viewed.
+    technical_note: >
+      Filed under shopping-cart only as the closest listed capability (no navigation capability exists). PREVIOUS before any screen was viewed causes NullPointerException on longScreenName.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/view/template/com/sun/j2ee/blueprints/waf/view/template/TemplateServlet.java
+        line_start: 175
+        line_end: 180
+        excerpt: |
+          if (screenName.equals(PREVIOUS_SCREEN)) {
+              String longScreenName  =  (String)request.getSession().getAttribute(WebKeys.PREVIOUS_SCREEN);
+              int lastDot2 = longScreenName.lastIndexOf(".");
+              if ( lastDot2 != -1 && lastDot2 > 0) {
+                  screenName = longScreenName.substring(0, lastDot2);
+      - path: legacy-source/app/src/waf/src/docroot/WEB-INF/web.xml
+        line_start: 76
+        line_end: 83
+        excerpt: |
+          <init-param>
+            <param-name>cache_previous_screen_attributes</param-name>
+            <param-value>false</param-value>
+          </init-param>
+          <init-param>
+            <param-name>cache_previous_screen_parameters</param-name>
+            <param-value>false</param-value>
+          </init-param>
+    stack_metadata:
+      framework: WAF TemplateServlet
+      session.scope: session
+
+  - record_key: LOC-REQ-0014
+    kind: requirement
+    capability_key: localization
+    requirement: >
+      The system SHALL, for the client-state link variant of change-locale, restore request attributes that the page carried as encoded form fields prefixed with the cache id and then show the screen named by "referring_screen".
+    confidence: medium
+    confidence_basis: >
+      One clear handler plus mapping; client-supplied serialized data is a hazard.
+    risk_class: operational
+    basis: >
+      ClientStateFlowHandler decodes Base64, deserialises each cacheId_attribute_ field and sets it as a request attribute.
+    plain_text: >
+      A language switch from a page that keeps its state in the browser brings the user back to the same page with that state restored.
+    technical_note: >
+      Deserialization of untrusted client input via ObjectInputStream; decode errors are logged and ignored. A missing cacheId causes NullPointerException on string concatenation of null (it yields "null_attribute_" so no NPE actually; no fields match).
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/controller/web/flow/handlers/ClientStateFlowHandler.java
+        line_start: 70
+        line_end: 90
+        excerpt: |
+          String forwardScreen = request.getParameter("referring_screen");
+          String cacheId= request.getParameter("cacheId");
+          if (key.startsWith(cacheId + "_attribute_")) {
+          byte[] bytes  = Base64.decode(valueString.getBytes());
+          Object requestObject = requestObject = ois.readObject();
+          request.setAttribute(requestObjectKey, requestObject);
+      - path: legacy-source/app/src/waf/src/docroot/WEB-INF/mappings.xml
+        line_start: 52
+        line_end: 55
+        excerpt: |
+          <url-mapping url="changeclientchachelinklocale.do"  useFlowHandler="true" >
+              <web-action-class>com.sun.j2ee.blueprints.waf.controller.web.action.actions.ChangeLocaleHTMLAction</web-action-class>
+               <flow-handler class="com.sun.j2ee.blueprints.waf.controller.web.flow.handlers.ClientStateFlowHandler"/>
+          </url-mapping>
+    stack_metadata:
+      framework: WAF flow handler
+
+  - record_key: LOC-REQ-0015
+    kind: requirement
+    capability_key: localization
+    requirement: >
+      The system SHALL offer the locale choices US English, German, Japanese and Simplified Chinese on the locale-change demo page.
+    confidence: low
+    confidence_basis: >
+      Single demo JSP; it is labelled as a demonstration, and unclear whether it is reachable in the live application. German is offered although no German screens are configured.
+    dispute:
+      reason: unresolved-reachability
+      detail: >
+        changelocale.jsp is a framework demo page; no screen definition or mapping in this module points at it. Settling it needs the screen definitions deployed by the consuming application.
+    risk_class: presentational
+    basis: >
+      Select options in changelocale.jsp.
+    plain_text: >
+      Users can pick English, German, Japanese or Chinese.
+    technical_note: >
+      Form posts to changelocale.do.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/waf/src/docroot/changelocale.jsp
+        line_start: 50
+        line_end: 55
+        excerpt: |
+          <select name="locale">
+            <option value="en_US">US English</option>
+            <option value="de_DE">German</option>
+            <option value="ja_JP">Japanese</option>
+            <option value="zh_CN">Simplified Chinese</option>
+          </select>
+    stack_metadata:
+      jsp.page: changelocale.jsp
+
+findings:
+  - kind: ambiguity
+    path: legacy-source/app/src/waf/src/docroot/WEB-INF/xml/requestmappings.xml
+    description: >
+      requestmappings.xml describes Pet Store sign-in, shipping and billing URL mappings (requiresSignin, SigninHandler, etc.), but no WAF class reads this file (MainServlet and ScreenFlowManager read /WEB-INF/mappings.xml). It is likely a leftover. If it is live elsewhere the sign-on and checkout rules in it belong to the petstore module extraction. A human should confirm.
+  - kind: ambiguity
+    path: legacy-source/app/src/waf/src/docroot/WEB-INF/web.xml
+    description: >
+      env-entry values for ComponentManager and WebController are redacted in the source, so the concrete implementation classes cannot be read in this pass.
+
+suspected_defects:
+  - capability_key: localization
+    record_keys: [LOC-WF-0010]
+    severity: medium
+    category: unreachable-branch
+    title: Change-locale EJB action is mapped under a non-matching event class name
+    description: >
+      mappings.xml keys the handler to event.events.ChangeLocaleEvent, while the event class is event.impl.ChangeLocaleEvent and lookup uses the runtime class name, so the back-end locale update likely never runs; the web action still sets the session locale.
+    traces:
+      - path: legacy-source/app/src/waf/src/docroot/WEB-INF/mappings.xml
+        line_start: 44
+        line_end: 44
+        excerpt: |
+          <event-class>com.sun.j2ee.blueprints.waf.event.events.ChangeLocaleEvent</event-class>
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/controller/web/action/actions/ChangeLocaleHTMLAction.java
+        line_start: 222
+        line_end: 222
+        excerpt: |
+          import com.sun.j2ee.blueprints.waf.event.impl.ChangeLocaleEvent;
+  - capability_key: order-processing-workflow
+    record_keys: [ORD-WF-0011]
+    severity: low
+    category: other
+    title: Error screen mapping names a class from another package
+    description: >
+      The exception mapping uses the petstore GeneralFailureException package, not the WAF one, so WAF failures of that type do not match and fall through to a server error.
+    traces:
+      - path: legacy-source/app/src/waf/src/docroot/WEB-INF/mappings.xml
+        line_start: 57
+        line_end: 57
+        excerpt: |
+          <exception-mapping exception-class="com.sun.j2ee.blueprints.petstore.controller.exceptions.GeneralFailureException" screen="error.screen"/>
+  - capability_key: order-processing-workflow
+    record_keys: [ORD-WF-0009, ORD-WF-0008]
+    severity: low
+    category: error-swallowed
+    title: Failure to load an action or handler class is logged and ignored
+    description: >
+      RequestProcessor, StateMachine and ScreenFlowManager catch load failures, print to stderr and continue, so a misconfigured action silently does nothing.
+    traces:
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/controller/ejb/StateMachine.java
+        line_start: 104
+        line_end: 106
+        excerpt: |
+          } catch (Exception ex) {
+              System.err.println("StateMachine: error loading " + actionName + " :" + ex);
+          }
+  - capability_key: localization
+    record_keys: [LOC-REQ-0002]
+    severity: low
+    category: other
+    title: Locale is stored under a different session key than the front controller reads
+    description: >
+      ChangeLocaleHTMLAction stores the locale under the literal "com.sun.j2ee.blueprints.waf.LOCALE"; MainServlet and TemplateServlet read WebKeys.LOCALE. If WebKeys.LOCALE has a different value, the language change has no effect on screen selection. WebKeys was not read in this pass.
+    traces:
+      - path: legacy-source/app/src/waf/src/controller/com/sun/j2ee/blueprints/waf/controller/web/action/actions/ChangeLocaleHTMLAction.java
+        line_start: 236
+        line_end: 236
+        excerpt: |
+          public static final String LOCALE = "com.sun.j2ee.blueprints.waf.LOCALE";
