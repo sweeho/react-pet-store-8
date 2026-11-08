@@ -9,15 +9,15 @@ capabilities.
 
 ## What is original and what is added
 
-| Part                                               | Origin                                                                                                                                                                                                                                                |
-| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/`                                             | Original source from `petstore-1_3_2.zip`: 4 applications (storefront, order processing center, supplier, admin client), 18 components, the WAF framework. Unchanged. Binaries (`*.ear`, `*.jar`, `*.gif`, `*.jpg`) and the bundled Ant are left out. |
-| `docs/sun`                                         | Original Sun documentation (installing, configuring, using, building)                                                                                                                                                                                 |
-| `db/schema`                                        | Added. Catalog tables from `PopulateSQL.xml`. All other tables are the relational form of the CMP entity beans, which the J2EE RI creates at deploy time. Cloudscape and Oracle variants.                                                             |
-| `batch`, `db/batch`, `conf`, `scheduler/control-m` | Added. Seven batch jobs on the real tables, their SQL, settings and a Control-M export (2 folders, 7 jobs).                                                                                                                                           |
-| `docs/guides`, `docs/*.pdf`                        | Added. User Guide, Administration Guide (both follow the Sun docs) and Operations Runbook.                                                                                                                                                            |
-| `data`                                             | Catalog, user, customer and inventory rows come from the shipped populate files. Orders are synthetic (see below).                                                                                                                                    |
-| `vortex`                                           | Added. Source inputs, upload steps and the answer key.                                                                                                                                                                                                |
+| Part | Origin |
+|---|---|
+| `app/` | Original source from `petstore-1_3_2.zip`: 4 applications (storefront, order processing center, supplier, admin client), 18 components, the WAF framework. Unchanged. Binaries (`*.ear`, `*.jar`, `*.gif`, `*.jpg`) and the bundled Ant are left out. |
+| `docs/sun` | Original Sun documentation (installing, configuring, using, building) |
+| `db/schema` | Added. Catalog tables from `PopulateSQL.xml`. All other tables are the relational form of the CMP entity beans, which the J2EE RI creates at deploy time. Cloudscape and Oracle variants. |
+| `batch`, `db/batch`, `conf`, `scheduler/control-m` | Added. Seven batch jobs on the real tables, their SQL, settings and a Control-M export (2 folders, 7 jobs). |
+| `docs/guides`, `docs/*.pdf` | Added. User Guide, Administration Guide (both follow the Sun docs) and Operations Runbook. |
+| `data` | Catalog, user, customer and inventory rows come from the shipped populate files. Orders are synthetic (see below). |
+| `vortex` | Added. Source inputs, upload steps and the answer key. |
 
 The 7 batch jobs, the schema of the CMP tables, the guides, the order history
 and the samples were written for this example. They follow the code, but the
@@ -50,21 +50,21 @@ batch scripts need Derby `ij` and the layout under `/opt/petstore` and
 
 ## Layout
 
-| Path                                  | Content                                                                                                         |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `app/src/apps`                        | petstore, opc, supplier, admin                                                                                  |
-| `app/src/components`                  | 18 components: catalog, signon, cart, customer, purchaseorder, supplierpo and others                            |
-| `app/src/waf`                         | Web application framework (controller, view, template)                                                          |
-| `db/schema`                           | `petstore_cloudscape.sql` (runtime), `petstore_oracle.sql` (reference production): 20 tables, 5 indexes, 1 view |
-| `db/batch`                            | SQL run by the batch jobs                                                                                       |
-| `batch`                               | 7 batch shell scripts                                                                                           |
-| `scheduler/control-m/PS_PETSTORE.xml` | Control-M DEFTABLE                                                                                              |
-| `conf`                                | `petstore.properties`, `env.sh`                                                                                 |
-| `data/migration`                      | Full table extracts (CSV, with header)                                                                          |
-| `data/interface`                      | Sample batch output `orders_YYYYMMDD.csv`                                                                       |
-| `data/seed`                           | Order history SQL                                                                                               |
-| `docs`                                | Guides (PDF and HTML source), Sun documentation                                                                 |
-| `vortex`                              | Inputs, upload steps, answer key                                                                                |
+| Path | Content |
+|---|---|
+| `app/src/apps` | petstore, opc, supplier, admin |
+| `app/src/components` | 18 components: catalog, signon, cart, customer, purchaseorder, supplierpo and others |
+| `app/src/waf` | Web application framework (controller, view, template) |
+| `db/schema` | `petstore_cloudscape.sql` (runtime), `petstore_oracle.sql` (reference production): 20 tables, 5 indexes, 1 view |
+| `db/batch` | SQL run by the batch jobs |
+| `batch` | 7 batch shell scripts |
+| `scheduler/control-m/PS_PETSTORE.xml` | Control-M DEFTABLE |
+| `conf` | `petstore.properties`, `env.sh` |
+| `data/migration` | Full table extracts (CSV, with header) |
+| `data/interface` | Sample batch output `orders_YYYYMMDD.csv` |
+| `data/seed` | Order history SQL |
+| `docs` | Guides (PDF and HTML source), Sun documentation |
+| `vortex` | Inputs, upload steps, answer key |
 
 ## Vortex
 
