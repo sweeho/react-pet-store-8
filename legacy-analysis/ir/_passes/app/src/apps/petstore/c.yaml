@@ -1,0 +1,12 @@
+records: []
+findings:
+  - kind: unparseable
+    path: legacy-source/app/src/apps/petstore
+    description: >
+      The module could not be read. Neither legacy-source/ nor
+      legacy-analysis/discovery/capabilities.csv nor legacy-analysis/sources/
+      exists in the worktree (only legacy-analysis/ir/_passes from other shards).
+      No records were emitted because none could be traced and no capability_key
+      list was available. Re-run once the legacy tree and capabilities.csv are
+      committed to the branch.
+suspected_defects: []
