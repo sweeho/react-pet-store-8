@@ -1,0 +1,429 @@
+records:
+  - record_key: BATCH-REQ-0001
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL take an online backup of the store database every day at 01:00, move it to a folder named with the run date (YYYYMMDD), and delete dated backup folders older than 7 days.
+    plain_text: >
+      Every night at 1 AM the store database is backed up into a dated copy, and copies older than a week are removed.
+    technical_note: >
+      batch/ps_db_backup.sh calls SYSCS_BACKUP_DATABASE via db/batch/db_backup.sql, renames PetStoreDB to PetStoreDB_YYYYMMDD, prunes with find -mtime +PS_BACKUP_KEEP_DAYS (7 in conf/env.sh). Failure exits 8. Schedule (01:00) is only stated in a comment; no crontab in the tree.
+    interface: false
+    confidence: medium
+    confidence_basis: >
+      Behaviour read in the script, SQL and env.sh; the 01:00 schedule is a comment only and no scheduler config was seen, so not graded high.
+    risk_class: operational
+    basis: Script comment, backup CALL, rename and find-based retention.
+    traces:
+      - path: legacy-source/batch/ps_db_backup.sh
+        line_start: 1
+        line_end: 13
+        excerpt: |
+          # PS_DB_BACKUP - daily 01:00. Online Derby backup of PetStoreDB, keeps 7 days.
+          PS_JOB=PS_DB_BACKUP
+          . "${PS_HOME:-/opt/petstore}/conf/env.sh"
+          STAMP=$(date '+%Y%m%d')
+          ps_log "start"
+          rm -rf "$PS_BACKUP_DIR/PetStoreDB"
+          ps_ij "$PS_SQL/db_backup.sql" > /dev/null || { ps_log "FAILED: backup"; exit 8; }
+          rm -rf "$PS_BACKUP_DIR/PetStoreDB_$STAMP"
+          mv "$PS_BACKUP_DIR/PetStoreDB" "$PS_BACKUP_DIR/PetStoreDB_$STAMP"
+          find "$PS_BACKUP_DIR" -maxdepth 1 -name 'PetStoreDB_*' -mtime +$PS_BACKUP_KEEP_DAYS -exec rm -rf {} \;
+      - path: legacy-source/db/batch/db_backup.sql
+        line_start: 3
+        line_end: 3
+        excerpt: |
+          CALL SYSCS_UTIL.SYSCS_BACKUP_DATABASE('/var/petstore/backup');
+      - path: legacy-source/conf/env.sh
+        line_start: 16
+        line_end: 16
+        excerpt: |
+          PS_BACKUP_KEEP_DAYS=7
+    stack_metadata:
+      framework: shell + Derby ij
+      batch.trigger: daily 01:00
+      db.object: SYSCS_UTIL.SYSCS_BACKUP_DATABASE
+
+  - record_key: BATCH-REQ-0002
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL export the previous day's purchase orders (id, user id, date, locale, value, line count, status) daily at 01:30 to a comma-separated file orders_YYYYMMDD.csv with no header, ordered by order id, and append a final line TRAILER,YYYYMMDD,row-count for Finance.
+    plain_text: >
+      Each night a file of the previous day's orders is produced for Finance, with a closing line giving the date and the number of orders.
+    technical_note: >
+      batch/ps_order_extract.sh binds LO_MS/HI_MS (local midnight yesterday/today in epoch ms) into db/batch/order_extract.sql, which runs SYSCS_EXPORT_QUERY (comma, double-quote, UTF-8). The row count is wc -l of the export before the trailer is appended. Failure exits 8. Consumer is Finance (external to this app).
+    interface: true
+    confidence: high
+    confidence_basis: >
+      Script header, SQL query and script logic agree on window, format and trailer.
+    risk_class: financial
+    basis: Script and SQL define the window, columns, ordering and trailer.
+    traces:
+      - path: legacy-source/batch/ps_order_extract.sh
+        line_start: 1
+        line_end: 18
+        excerpt: |
+          # PS_ORDER_EXTRACT - daily 01:30 after PS_DB_BACKUP.
+          # Exports yesterday's purchase orders to orders_YYYYMMDD.csv for Finance.
+          # No header. Last line is TRAILER,YYYYMMDD,row count.
+          ROWS=$(wc -l < "$OUT" | tr -d ' ')
+          echo "TRAILER,$DAY,$ROWS" >> "$OUT"
+      - path: legacy-source/db/batch/order_extract.sql
+        line_start: 4
+        line_end: 12
+        excerpt: |
+          CALL SYSCS_UTIL.SYSCS_EXPORT_QUERY(
+            'SELECT p.po_id, p.po_user_id, p.po_date, p.po_locale, p.po_value,
+                    (SELECT COUNT(*) FROM po_line_item l WHERE l.po_id = p.po_id),
+                    m.status
+               FROM purchase_order p JOIN order_manager m ON m.order_id = p.po_id
+              WHERE p.po_date >= :LO_MS AND p.po_date < :HI_MS
+              ORDER BY p.po_id',
+            ':OUT_FILE', ',', '"', 'UTF-8');
+    stack_metadata:
+      framework: shell + Derby ij
+      batch.trigger: daily 01:30 after PS_DB_BACKUP
+      db.object: purchase_order, order_manager, po_line_item
+
+  - record_key: BATCH-REQ-0003
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL, weekly on Sunday at 02:00, delete orders whose status is COMPLETED or DENIED and whose order date is earlier than local midnight 180 days ago, together with their order lines, supplier orders and supplier lines, order manager record, contact information, address and credit card, as one transaction.
+    plain_text: >
+      Once a week, finished or denied orders older than 180 days are permanently removed together with the customer contact, address and card details attached to them.
+    technical_note: >
+      batch/ps_order_purge.sh computes CUTOFF_MS via ps_midnight_ms(PS_ORDER_RETENTION_DAYS=180) and binds it into db/batch/order_purge.sql, which stages ids in a session temp table and deletes child-first with AUTOCOMMIT OFF and a single COMMIT. Failure exits 8. Output appended to order_purge.log.
+    interface: false
+    confidence: high
+    confidence_basis: >
+      Retention value is configured in env.sh and the script comment, and the SQL implements it; deletion order and transaction are explicit.
+    risk_class: regulated
+    basis: Retention threshold, status filter and delete cascade in SQL.
+    traces:
+      - path: legacy-source/db/batch/order_purge.sql
+        line_start: 5
+        line_end: 26
+        excerpt: |
+          AUTOCOMMIT OFF;
+          INSERT INTO session.purge_po
+            SELECT p.po_id, p.contact_id, p.card_id, c.address_id
+              FROM purchase_order p
+              JOIN order_manager m ON m.order_id = p.po_id
+              JOIN contact_info c ON c.contact_id = p.contact_id
+             WHERE m.status IN ('COMPLETED', 'DENIED') AND p.po_date < :CUTOFF_MS;
+          DELETE FROM contact_info       WHERE contact_id IN (SELECT contact_id FROM session.purge_po);
+          DELETE FROM address            WHERE address_id IN (SELECT address_id FROM session.purge_po);
+          DELETE FROM credit_card        WHERE card_id IN (SELECT card_id FROM session.purge_po);
+          COMMIT;
+      - path: legacy-source/batch/ps_order_purge.sh
+        line_start: 1
+        line_end: 8
+        excerpt: |
+          # PS_ORDER_PURGE - weekly Sunday 02:00 after PS_ORDER_EXTRACT.
+          # Deletes COMPLETED and DENIED orders older than 180 days, with their lines,
+          # supplier orders, contact information, addresses and payment cards.
+          CUTOFF_MS=$(ps_midnight_ms "$PS_ORDER_RETENTION_DAYS")
+      - path: legacy-source/conf/env.sh
+        line_start: 15
+        line_end: 15
+        excerpt: |
+          PS_ORDER_RETENTION_DAYS=180
+    stack_metadata:
+      framework: shell + Derby ij
+      batch.trigger: weekly Sunday 02:00
+      db.object: purchase_order, order_manager, contact_info, address, credit_card, supplier_order
+
+  - record_key: BATCH-RULE-0004
+    kind: business-rule
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL list daily at 01:45 every order whose status is PENDING or APPROVED and whose order date is more than 24 hours old, oldest first, into order_aging_YYYYMMDD.txt, plus a count of orders per status.
+    plain_text: >
+      Each night a report lists orders that have been waiting more than a day for approval or for supplier invoicing, and counts orders by status.
+    technical_note: >
+      batch/ps_order_aging_report.sh computes CUTOFF_MS = now - PS_STUCK_ORDER_HOURS (24) h and binds it into db/batch/order_aging.sql. PENDING = awaiting admin client, APPROVED = sent to supplier without invoice.
+    interface: false
+    confidence: high
+    confidence_basis: >
+      Threshold in env.sh, SQL comment and query agree.
+    risk_class: operational
+    basis: SQL filter and script cutoff computation.
+    traces:
+      - path: legacy-source/db/batch/order_aging.sql
+        line_start: 1
+        line_end: 8
+        excerpt: |
+          -- PS_ORDER_AGING_REPORT: orders still PENDING or APPROVED after 24 hours.
+          SELECT 'STUCK' AS chk, p.po_id, p.po_user_id, p.po_locale, p.po_value, m.status
+            FROM purchase_order p JOIN order_manager m ON m.order_id = p.po_id
+           WHERE m.status IN ('PENDING', 'APPROVED') AND p.po_date < :CUTOFF_MS
+           ORDER BY p.po_date;
+      - path: legacy-source/batch/ps_order_aging_report.sh
+        line_start: 9
+        line_end: 9
+        excerpt: |
+          CUTOFF_MS=$(( $(date '+%s') * 1000 - PS_STUCK_ORDER_HOURS * 3600000 ))
+    stack_metadata:
+      framework: shell + Derby ij
+      batch.trigger: daily 01:45
+      db.object: purchase_order, order_manager
+
+  - record_key: BATCH-RULE-0005
+    kind: business-rule
+    capability_key: batch-operations
+    requirement: >
+      GIVEN an order whose supplier order is COMPLETED but whose order manager status is not COMPLETED, WHEN the aging report runs, THEN the system SHALL list it as a MISMATCH row; and the job SHALL end with warning code 4 whenever any STUCK or MISMATCH row exists.
+    plain_text: >
+      If the supplier has invoiced an order but our own order is not closed, or an order is stuck, it is reported and operations is alerted.
+    technical_note: >
+      MISMATCH query joins order_manager to supplier_order; script greps ^(STUCK|MISMATCH) in the output and exits 4.
+    interface: false
+    confidence: high
+    confidence_basis: >
+      Query, its comment and the script's exit logic all state it.
+    risk_class: operational
+    basis: SQL mismatch query and script exit code.
+    traces:
+      - path: legacy-source/db/batch/order_aging.sql
+        line_start: 12
+        line_end: 14
+        excerpt: |
+          SELECT 'MISMATCH' AS chk, m.order_id, m.status, s.po_status
+            FROM order_manager m JOIN supplier_order s ON s.po_id = m.order_id
+           WHERE s.po_status = 'COMPLETED' AND m.status <> 'COMPLETED';
+      - path: legacy-source/batch/ps_order_aging_report.sh
+        line_start: 12
+        line_end: 15
+        excerpt: |
+          if grep -qE "^(STUCK|MISMATCH) " "$OUT"; then
+            ps_log "end WARNING stuck orders listed in $OUT"
+            exit 4
+          fi
+    stack_metadata:
+      framework: shell + Derby ij
+      batch.trigger: daily 01:45
+      db.object: order_manager, supplier_order
+
+  - record_key: BATCH-REQ-0006
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL list daily at 01:50 every supplier inventory item with quantity below 500 (English description, lowest quantity first) into inventory_YYYYMMDD.txt, followed by the number of items tracked and total units in stock.
+    plain_text: >
+      Each night a low-stock report lists every item with fewer than 500 units at the supplier, lowest first, with overall stock totals.
+    technical_note: >
+      PS_LOW_STOCK_QTY=500 in conf/env.sh is bound into db/batch/inventory_report.sql. The description is joined only for locale en_US, so an item without an English description is omitted from the list.
+    interface: false
+    confidence: medium
+    confidence_basis: >
+      Clear in one script/SQL pair; the 500 threshold is a bare configuration literal with no business rationale.
+    risk_class: operational
+    basis: SQL with threshold binding.
+    traces:
+      - path: legacy-source/db/batch/inventory_report.sql
+        line_start: 3
+        line_end: 10
+        excerpt: |
+          SELECT i.item_id, p.productid, d.descn, i.quantity
+            FROM inventory i
+            JOIN item p ON p.itemid = i.item_id
+            JOIN item_details d ON d.itemid = i.item_id AND d.locale = 'en_US'
+           WHERE i.quantity < :LOW_QTY
+           ORDER BY i.quantity, i.item_id;
+
+          SELECT COUNT(*) AS items_tracked, SUM(quantity) AS units_in_stock FROM inventory;
+      - path: legacy-source/conf/env.sh
+        line_start: 18
+        line_end: 18
+        excerpt: |
+          PS_LOW_STOCK_QTY=500
+    stack_metadata:
+      framework: shell + Derby ij
+      batch.trigger: daily 01:50
+      db.object: inventory, item, item_details
+
+  - record_key: BATCH-RULE-0007
+    kind: business-rule
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL run daily at 06:00 five catalog integrity checks (C1 category without product, C2 product without item, C3 item list price below unit cost, C4 item missing a description for a locale of its category, C5 item with no supplier inventory row) and SHALL end with code 4 when any check returns a row.
+    plain_text: >
+      Every morning before opening, the catalog is checked for empty categories, products without items, items priced below cost, missing translations and items the supplier does not stock; any problem alerts operations.
+    technical_note: >
+      db/batch/catalog_check.sql; ps_catalog_check.sh greps output for ^C[1-5] and exits 4. Output appended to catalog_check.log.
+    interface: false
+    confidence: high
+    confidence_basis: >
+      SQL checks and script failure criterion both read and consistent.
+    risk_class: operational
+    basis: Five SQL checks and script exit logic.
+    traces:
+      - path: legacy-source/db/batch/catalog_check.sql
+        line_start: 3
+        line_end: 18
+        excerpt: |
+          -- C1: categories with no product
+          SELECT 'C1' AS chk, c.catid FROM category c
+           WHERE NOT EXISTS (SELECT 1 FROM product p WHERE p.catid = c.catid);
+          -- C3: items priced below cost
+          SELECT 'C3' AS chk, itemid, locale FROM item_details WHERE listprice < unitcost;
+          -- C5: items the supplier does not stock
+          SELECT 'C5' AS chk, i.itemid FROM item i
+           WHERE NOT EXISTS (SELECT 1 FROM inventory v WHERE v.item_id = i.itemid);
+      - path: legacy-source/batch/ps_catalog_check.sh
+        line_start: 16
+        line_end: 19
+        excerpt: |
+          if echo "$OUT" | grep -qE "^C[1-5] "; then
+            ps_log "FAILED: integrity check found rows"
+            exit 4
+          fi
+    stack_metadata:
+      framework: shell + Derby ij
+      batch.trigger: daily 06:00
+      db.object: category, product, item, item_details, category_details, inventory
+
+  - record_key: BATCH-WF-0008
+    kind: workflow
+    capability_key: batch-operations
+    requirement: >
+      GIVEN the catalog tables do not exist, WHEN the catalog check runs, THEN the system SHALL request a non-forced first population of the store catalog and re-run the checks, and SHALL end with code 8 if the population request fails.
+    plain_text: >
+      If the catalog has never been loaded, the morning check asks the store to load it for the first time (without overwriting) and then checks again.
+    technical_note: >
+      Detects "does not exist" in ij output and calls PS_STORE_URL/Populate?forcefully=false via curl.
+    interface: true
+    confidence: medium
+    confidence_basis: >
+      One clear place; the Populate servlet on the store side was not examined in this pass.
+    risk_class: operational
+    basis: Script branch on missing tables.
+    traces:
+      - path: legacy-source/batch/ps_catalog_check.sh
+        line_start: 10
+        line_end: 14
+        excerpt: |
+          if echo "$OUT" | grep -q "does not exist"; then
+            ps_log "catalog tables missing, requesting first load"
+            curl -sf -o /dev/null "$PS_STORE_URL/Populate?forcefully=false" || { ps_log "FAILED: populate"; exit 8; }
+            OUT=$(ps_ij "$PS_SQL/catalog_check.sql")
+          fi
+    stack_metadata:
+      framework: shell
+      batch.trigger: daily 06:00
+
+  - record_key: BATCH-REQ-0009
+    kind: requirement
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL every 10 minutes request the entry page of the storefront, order processing, supplier and admin web modules with a 20 second timeout, log each module that does not answer HTTP 200, and end with code 8 if any failed.
+    plain_text: >
+      Every ten minutes the four web modules are checked to be up; any that fails to respond is logged and operations is alerted.
+    technical_note: >
+      batch/ps_health_check.sh curls main.screen, EntityCatalog.jsp, supplier root and admin root.
+    interface: true
+    confidence: medium
+    confidence_basis: >
+      One script; the 10-minute schedule is a comment only.
+    risk_class: operational
+    basis: Script loop over four URLs.
+    traces:
+      - path: legacy-source/batch/ps_health_check.sh
+        line_start: 1
+        line_end: 16
+        excerpt: |
+          # PS_HEALTH_CHECK - every 10 minutes, all day.
+          for URL in "$PS_STORE_URL/main.screen" "$PS_OPC_URL/EntityCatalog.jsp" "$PS_SUPPLIER_URL/" "$PS_ADMIN_URL/"; do
+            CODE=$(curl -s -o /dev/null -m 20 -w '%{http_code}' "$URL")
+            if [ "$CODE" != "200" ]; then
+              ps_log "DOWN url=$URL http=$CODE"
+          [ "$BAD" -eq 0 ] || exit 8
+    stack_metadata:
+      framework: shell + curl
+      batch.trigger: every 10 minutes
+
+  - record_key: BATCH-RULE-0010
+    kind: business-rule
+    capability_key: batch-operations
+    requirement: >
+      The system SHALL run batch jobs in a defined nightly order (backup 01:00, order extract 01:30, aging report 01:45, inventory report 01:50, weekly purge 02:00) and SHALL signal outcome by exit code: 0 success, 4 warning/data finding, 8 failure.
+    plain_text: >
+      Nightly jobs run in a fixed order, extract before purge, and each reports success, warning or failure so operations knows what needs attention.
+    technical_note: >
+      Ordering is stated only in script header comments; the purge SQL comment says it runs only after the extract but the purge does not check that the extract succeeded. No scheduler config found in the tree.
+    interface: false
+    confidence: low
+    confidence_basis: >
+      Schedules and ordering are comments only; no crontab or scheduler config seen.
+    risk_class: operational
+    basis: Header comments and consistent exit code convention.
+    traces:
+      - path: legacy-source/db/batch/order_purge.sql
+        line_start: 1
+        line_end: 3
+        excerpt: |
+          -- PS_ORDER_PURGE: delete COMPLETED and DENIED orders older than 180 days.
+          -- Runs only after PS_ORDER_EXTRACT so every order has been extracted first.
+          -- :CUTOFF_MS is the retention limit in epoch milliseconds.
+    stack_metadata:
+      framework: shell
+      batch.trigger: cron (not in source)
+
+findings: []
+
+suspected_defects:
+  - capability_key: batch-operations
+    record_keys: [BATCH-RULE-0004]
+    severity: low
+    category: contradicts-document
+    title: Aging report header describes a different status filter than the query
+    description: >
+      The script header says it lists orders "not COMPLETED or DENIED after 24 hours"; the query lists only PENDING and APPROVED. Any other status would be excluded.
+    traces:
+      - path: legacy-source/batch/ps_order_aging_report.sh
+        line_start: 3
+        line_end: 3
+        excerpt: |
+          # Lists orders not COMPLETED or DENIED after 24 hours (stuck in the OPC flow)
+      - path: legacy-source/db/batch/order_aging.sql
+        line_start: 4
+        line_end: 4
+        excerpt: |
+          WHERE m.status IN ('PENDING', 'APPROVED') AND p.po_date < :CUTOFF_MS
+  - capability_key: batch-operations
+    record_keys: [BATCH-RULE-0007]
+    severity: low
+    category: contradicts-document
+    title: C4 checks the category's locales, not the fixed list of three
+    description: >
+      The comment says C4 checks en_US, ja_JP and zh_CN, but the query takes locales from category_details of the item's category, so a locale missing from the category is never checked.
+    traces:
+      - path: legacy-source/db/batch/catalog_check.sql
+        line_start: 10
+        line_end: 13
+        excerpt: |
+          -- C4: items missing a description for a locale the store serves (en_US, ja_JP, zh_CN)
+          SELECT 'C4' AS chk, i.itemid, l.locale FROM item i, category_details l
+           WHERE l.catid = (SELECT p.catid FROM product p WHERE p.productid = i.productid)
+             AND NOT EXISTS (SELECT 1 FROM item_details d WHERE d.itemid = i.itemid AND d.locale = l.locale);
+  - capability_key: batch-operations
+    record_keys: [BATCH-REQ-0003, BATCH-REQ-0002]
+    severity: medium
+    category: other
+    title: Purge does not verify the extract ran, and the extract covers only one day
+    description: >
+      The purge deletes eligible orders regardless of whether the extract succeeded for them; the extract only exports the previous day, so a missed extract night is never recovered before purge. Also, contact, address and card rows are deleted by id without checking that other orders do not reference them.
+    traces:
+      - path: legacy-source/db/batch/order_purge.sql
+        line_start: 2
+        line_end: 2
+        excerpt: |
+          -- Runs only after PS_ORDER_EXTRACT so every order has been extracted first.
+      - path: legacy-source/batch/ps_order_purge.sh
+        line_start: 9
+        line_end: 12
+        excerpt: |
+          ps_sql_bind "$PS_SQL/order_purge.sql" "$SQL" CUTOFF_MS="$CUTOFF_MS"
+          ps_ij "$SQL" >> "$PS_LOG_DIR/order_purge.log" || { ps_log "FAILED"; exit 8; }
