@@ -1,0 +1,28 @@
+# PIT mutation testing for the legacy Java Pet Store 1.3.2 (FR-IM-56).
+# STATUS: UNVERIFIED. Not run, so there is no report and no mutation score.
+#   - The build image has no JDK (`java: command not found`), no Maven, no Gradle.
+#   - The legacy build is Ant (legacy-source/app/src/build.xml, target `core`),
+#     which the legacy-runtime container installs; there is no pom.xml or Gradle
+#     wrapper, and adding one would change legacy source.
+#   - The legacy source has no JUnit tests, so PIT has nothing to run against it
+#     until tests exist; expect "no tests found" rather than a score.
+tool: pit
+# Run from the repository root with legacy-source/ checked out from branch
+# vortex/legacy-spec/sx-0001. Compiles with Ant, then runs the PIT command line
+# over the compiled classes. PIT_HOME holds the pitest-command-line and
+# pitest-entry jars, and LEGACY_CLASSPATH the J2EE RI and compiled legacy classes.
+command: >-
+  ant -f legacy-source/app/src/build.xml core &&
+  java -cp "$PIT_HOME/*" org.pitest.mutationtest.commandline.MutationCoverageReport
+  --reportDir target/pit-reports
+  --targetClasses 'com.sun.j2ee.blueprints.*'
+  --targetTests 'com.sun.j2ee.blueprints.*Test'
+  --sourceDirs legacy-source/app/src
+  --classPath "$LEGACY_CLASSPATH"
+  --outputFormats XML
+  --timestampedReports false
+targetClasses:
+  - "com.sun.j2ee.blueprints.*"
+targetTests:
+  - "com.sun.j2ee.blueprints.*Test"
+reportPath: target/pit-reports/mutations.xml
