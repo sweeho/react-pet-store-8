@@ -1,0 +1,191 @@
+recommendations:
+  - record_key: ACC-REQ-0008
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: ACC-REQ-0009
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: ACC-REQ-0010
+    recommendation: accept
+    confidence: low
+    reason: >
+      Disputed in the passes; the code is the evidence. Confirm what production does and send the conflict to the Business Owner via the defect register.
+  - record_key: LOC-REQ-0014
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Read from configuration and code; reachability or cascade side is not fully confirmed, so an SME should check.
+  - record_key: CUSTOMER-ACCOUNTS-REQ-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTOMER-ACCOUNTS-REQ-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTOMER-ACCOUNTS-REQ-0003
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTOMER-ACCOUNTS-REQ-0004
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTOMER-ACCOUNTS-REQ-0005
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTOMER-ACCOUNTS-REQ-0006
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUST-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUST-RULE-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Read from configuration and code; reachability or cascade side is not fully confirmed, so an SME should check.
+  - record_key: CUST-RULE-0003
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUST-REQ-0004
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUST-REQ-0005
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUST-RULE-0006
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUST-REQ-0007
+    recommendation: accept
+    confidence: low
+    reason: >
+      Disputed in the passes; the code is the evidence. Confirm what production does and send the conflict to the Business Owner via the defect register.
+  - record_key: CUST-RULE-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUST-REQ-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTOMER-ACCOUNTS-ENTITY-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTACC-BR-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTACC-BR-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTACC-BR-0003
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTACC-BR-0004
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTACC-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTACC-REQ-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTACC-REQ-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTACC-BR-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Read from configuration and code; reachability or cascade side is not fully confirmed, so an SME should check.
+  - record_key: CUSTACC-ENT-0004
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: SIGN-REQ-0006
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: SIGN-WF-0006
+    recommendation: accept
+    confidence: low
+    reason: >
+      Disputed in the passes; the code is the evidence. Confirm what production does and send the conflict to the Business Owner via the defect register.
+  - record_key: ACCOUNTS-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: ACCOUNTS-ENT-0002
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTACCT-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CUSTACCT-RULE-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: ADDR-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: CONTACT-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
+  - record_key: ACCT-ENT-0001
+    recommendation: accept
+    confidence: high
+    reason: >
+      Pass A and Pass B agree with the cited code or DDL; nothing contradicts it.
