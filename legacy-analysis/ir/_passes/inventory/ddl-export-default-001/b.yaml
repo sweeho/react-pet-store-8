@@ -1,0 +1,356 @@
+records:
+  - record_key: CAT-ENT-0001
+    kind: entity
+    capability_key: catalog-browsing
+    requirement: >
+      The system SHALL identify each product category by a unique category id of at most 10 characters.
+    confidence: medium
+    confidence_basis: >
+      Declared identically in the Cloudscape and Oracle schema scripts (two places); no code or test was read in this unit. 
+    risk_class: presentational
+    basis: >
+      Table definition category with its constraints.
+    plain_text: >
+      Every product category has its own unique short code.
+    technical_note: >
+      Primary key pk_category on catid; char(10) in Cloudscape, varchar2(10) in Oracle.
+    interface: false
+    traces:
+      - kind: db_object
+        path: db/schema/petstore_cloudscape.sql
+        anchor: category
+        line_start: 13
+        line_end: 15
+        excerpt: |
+          CREATE TABLE category (
+      - kind: db_object
+        path: db/schema/petstore_oracle.sql
+        anchor: category
+        line_start: 13
+        line_end: 15
+        excerpt: |
+          CREATE TABLE category (
+    stack_metadata:
+      db.object: category
+      db.kind: table
+  - record_key: CAT-ENT-0001
+    kind: entity
+    capability_key: localization
+    requirement: >
+      The system SHALL store a category's name, image and description per locale, require a name and locale, and allow only one detail row per category and locale, referencing an existing category.
+    confidence: high
+    confidence_basis: >
+      Declared identically in the Cloudscape and Oracle schema scripts (two places); no code or test was read in this unit. 
+    risk_class: presentational
+    basis: >
+      Table definition category_details with its constraints.
+    plain_text: >
+      Each category has a name, and optionally a picture and description, in each supported language; a category can have only one entry per language.
+    technical_note: >
+      PK (catid, locale), FK fk_category_details_1 to category; name and locale NOT NULL; image, descn nullable.
+    interface: false
+    traces:
+      - kind: db_object
+        path: db/schema/petstore_cloudscape.sql
+        anchor: category_details
+        line_start: 19
+        line_end: 26
+        excerpt: |
+          CREATE TABLE category_details (
+      - kind: db_object
+        path: db/schema/petstore_oracle.sql
+        anchor: category_details
+        line_start: 19
+        line_end: 26
+        excerpt: |
+          CREATE TABLE category_details (
+    stack_metadata:
+      db.object: category_details
+      db.kind: table
+  - record_key: ITEM-ENT-0001
+    kind: entity
+    capability_key: catalog-browsing
+    requirement: >
+      The system SHALL identify each item by a unique item id and require every item to belong to an existing product.
+    confidence: high
+    confidence_basis: >
+      Declared identically in the Cloudscape and Oracle schema scripts (two places); no code or test was read in this unit. 
+    risk_class: presentational
+    basis: >
+      Table definition item with its constraints.
+    plain_text: >
+      Every item for sale has a unique code and belongs to a product.
+    technical_note: >
+      PK pk_item(itemid), FK fk_item_1 productid -> product; productid NOT NULL.
+    interface: false
+    traces:
+      - kind: db_object
+        path: db/schema/petstore_cloudscape.sql
+        anchor: item
+        line_start: 49
+        line_end: 53
+        excerpt: |
+          CREATE TABLE item (
+      - kind: db_object
+        path: db/schema/petstore_oracle.sql
+        anchor: item
+        line_start: 49
+        line_end: 53
+        excerpt: |
+          CREATE TABLE item (
+    stack_metadata:
+      db.object: item
+      db.kind: table
+  - record_key: ADDR-ENT-0001
+    kind: entity
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL require street line 1, city, state, zip code and country for every address, with street line 2 optional, each address identified by a unique id.
+    confidence: high
+    confidence_basis: >
+      Declared identically in the Cloudscape and Oracle schema scripts (two places); no code or test was read in this unit. 
+    risk_class: operational
+    basis: >
+      Table definition address with its constraints.
+    plain_text: >
+      Every address must have a street, city, state, zip code and country; a second street line is optional.
+    technical_note: >
+      NOT NULL on all but street_name2; PK address_id varchar(40).
+    interface: false
+    traces:
+      - kind: db_object
+        path: db/schema/petstore_cloudscape.sql
+        anchor: address
+        line_start: 81
+        line_end: 89
+        excerpt: |
+          CREATE TABLE address (
+      - kind: db_object
+        path: db/schema/petstore_oracle.sql
+        anchor: address
+        line_start: 81
+        line_end: 89
+        excerpt: |
+          CREATE TABLE address (
+    stack_metadata:
+      db.object: address
+      db.kind: table
+  - record_key: CONTACT-ENT-0001
+    kind: entity
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL require family name, given name, telephone, email and an existing address for every contact record.
+    confidence: high
+    confidence_basis: >
+      Declared identically in the Cloudscape and Oracle schema scripts (two places); no code or test was read in this unit. 
+    risk_class: operational
+    basis: >
+      Table definition contact_info with its constraints.
+    plain_text: >
+      Every contact record must have a full name, telephone, email and an address on file.
+    technical_note: >
+      NOT NULL columns; FK fk_contact_info_1 address_id -> address; PK contact_id.
+    interface: false
+    traces:
+      - kind: db_object
+        path: db/schema/petstore_cloudscape.sql
+        anchor: contact_info
+        line_start: 93
+        line_end: 101
+        excerpt: |
+          CREATE TABLE contact_info (
+      - kind: db_object
+        path: db/schema/petstore_oracle.sql
+        anchor: contact_info
+        line_start: 93
+        line_end: 101
+        excerpt: |
+          CREATE TABLE contact_info (
+    stack_metadata:
+      db.object: contact_info
+      db.kind: table
+  - record_key: CARD-ENT-0001
+    kind: entity
+    capability_key: checkout-payment
+    requirement: >
+      The system SHALL require a card number, card type and expiry date for every stored credit card, with expiry held as text of at most 10 characters.
+    confidence: medium
+    confidence_basis: >
+      Declared identically in the Cloudscape and Oracle schema scripts (two places); no code or test was read in this unit. 
+    risk_class: financial
+    basis: >
+      Table definition credit_card with its constraints.
+    plain_text: >
+      A saved credit card must have a number, a card type and an expiry date.
+    technical_note: >
+      All NOT NULL; card_number stored as plain varchar(40) (no encryption in the schema); expiry_date is varchar(10), not a date type, so format is not enforced by the database.
+    interface: false
+    traces:
+      - kind: db_object
+        path: db/schema/petstore_cloudscape.sql
+        anchor: credit_card
+        line_start: 105
+        line_end: 110
+        excerpt: |
+          CREATE TABLE credit_card (
+      - kind: db_object
+        path: db/schema/petstore_oracle.sql
+        anchor: credit_card
+        line_start: 105
+        line_end: 110
+        excerpt: |
+          CREATE TABLE credit_card (
+    stack_metadata:
+      db.object: credit_card
+      db.kind: table
+  - record_key: ACCT-ENT-0001
+    kind: entity
+    capability_key: customer-accounts
+    requirement: >
+      The system SHALL require every account to have a status, an existing contact record and an existing credit card.
+    confidence: high
+    confidence_basis: >
+      Declared identically in the Cloudscape and Oracle schema scripts (two places); no code or test was read in this unit. 
+    risk_class: operational
+    basis: >
+      Table definition account with its constraints.
+    plain_text: >
+      Every customer account has a status, contact details and a credit card on file.
+    technical_note: >
+      NOT NULL status varchar(20); FK fk_account_1 contact_id, fk_account_2 card_id; no CHECK on allowed status values.
+    interface: false
+    traces:
+      - kind: db_object
+        path: db/schema/petstore_cloudscape.sql
+        anchor: account
+        line_start: 114
+        line_end: 121
+        excerpt: |
+          CREATE TABLE account (
+      - kind: db_object
+        path: db/schema/petstore_oracle.sql
+        anchor: account
+        line_start: 114
+        line_end: 121
+        excerpt: |
+          CREATE TABLE account (
+    stack_metadata:
+      db.object: account
+      db.kind: table
+  - record_key: CUST-ENT-0001
+    kind: entity
+    capability_key: sign-on-security
+    requirement: >
+      The system SHALL link each customer, identified by the sign-on user name, to exactly one existing sign-on user, one account and one profile.
+    confidence: high
+    confidence_basis: >
+      Declared identically in the Cloudscape and Oracle schema scripts (two places); no code or test was read in this unit. 
+    risk_class: operational
+    basis: >
+      Table definition customer with its constraints.
+    plain_text: >
+      Every customer is tied to one sign-on login, one account and one profile.
+    technical_note: >
+      PK user_id; FKs to signon_user(username), account, profile.
+    interface: false
+    traces:
+      - kind: db_object
+        path: db/schema/petstore_cloudscape.sql
+        anchor: customer
+        line_start: 135
+        line_end: 142
+        excerpt: |
+          CREATE TABLE customer (
+      - kind: db_object
+        path: db/schema/petstore_oracle.sql
+        anchor: customer
+        line_start: 135
+        line_end: 142
+        excerpt: |
+          CREATE TABLE customer (
+    stack_metadata:
+      db.object: customer
+      db.kind: table
+  - record_key: INV-ENT-0001
+    kind: entity
+    capability_key: supplier-fulfilment
+    requirement: >
+      The system SHALL record a mandatory integer stock quantity for each item id, one row per item.
+    confidence: medium
+    confidence_basis: >
+      Declared identically in the Cloudscape and Oracle schema scripts (two places); no code or test was read in this unit. 
+    risk_class: operational
+    basis: >
+      Table definition inventory with its constraints.
+    plain_text: >
+      Each item has a stock count on record.
+    technical_note: >
+      PK item_id; quantity integer NOT NULL; no FK to item and no CHECK preventing negative quantity.
+    interface: false
+    traces:
+      - kind: db_object
+        path: db/schema/petstore_cloudscape.sql
+        anchor: inventory
+        line_start: 206
+        line_end: 209
+        excerpt: |
+          CREATE TABLE inventory (
+      - kind: db_object
+        path: db/schema/petstore_oracle.sql
+        anchor: inventory
+        line_start: 206
+        line_end: 209
+        excerpt: |
+          CREATE TABLE inventory (
+    stack_metadata:
+      db.object: inventory
+      db.kind: table
+  - record_key: CTR-ENT-0001
+    kind: entity
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL keep named integer counters, one per unique name, each with a mandatory value.
+    confidence: low
+    confidence_basis: >
+      Declared identically in the Cloudscape and Oracle schema scripts (two places); no code or test was read in this unit. Purpose inferred.
+    risk_class: operational
+    basis: >
+      Table definition counter with its constraints.
+    plain_text: >
+      The system keeps named running counters, for example for generating sequential numbers.
+    technical_note: >
+      PK name; counter integer NOT NULL. Purpose (id generation) inferred from the table name, not read.
+    interface: false
+    traces:
+      - kind: db_object
+        path: db/schema/petstore_cloudscape.sql
+        anchor: counter
+        line_start: 213
+        line_end: 216
+        excerpt: |
+          CREATE TABLE counter (
+      - kind: db_object
+        path: db/schema/petstore_oracle.sql
+        anchor: counter
+        line_start: 213
+        line_end: 216
+        excerpt: |
+          CREATE TABLE counter (
+    stack_metadata:
+      db.object: counter
+      db.kind: table
+findings: []
+suspected_defects:
+  - capability_key: checkout-payment
+    record_keys: [CARD-ENT-0001]
+    severity: medium
+    category: other
+    title: Card number stored as plain text with free-text expiry
+    description: >
+      card_number is an unconstrained varchar and expiry_date is a varchar(10), so neither encryption nor date format is enforced by the schema.
+    traces:
+      - kind: db_object
+        path: db/schema/petstore_cloudscape.sql
+        anchor: credit_card
+        line_start: 105
+        line_end: 110
