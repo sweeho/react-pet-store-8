@@ -13,7 +13,8 @@
  * generated slugs), and external URLs are not fetched (a network call in CI is a
  * flake source, not a guard). Symlinked markdown is skipped — CLAUDE.md and
  * GEMINI.md point at AGENTS.md, and checking the same bytes three times only
- * triples the output. `artifacts/` is skipped: those are historical sprint
+ * triples the output. `legacy-source/` is skipped: it is the unmodified legacy code, whose links point
+ * outside this repository and must not be edited. `artifacts/` is skipped: those are historical sprint
  * records, and a link that was correct when written is not a defect now.
  */
 import { execFileSync } from 'node:child_process';
@@ -22,7 +23,7 @@ import { dirname, join } from 'node:path';
 
 const files = execFileSync('git', ['ls-files', '*.md'], { encoding: 'utf8' })
   .split('\n')
-  .filter(f => f && !f.startsWith('artifacts/') && !lstatSync(f).isSymbolicLink());
+  .filter(f => f && !f.startsWith('artifacts/') && !f.startsWith('legacy-source/') && !lstatSync(f).isSymbolicLink());
 
 const broken = [];
 for (const file of files) {
