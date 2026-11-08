@@ -1,0 +1,241 @@
+recommendations:
+  - record_key: LOC-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Default session locale'. Passes agree on the cited code and DDL.
+
+  - record_key: LOC-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Change session locale'. Passes agree on the cited code and DDL.
+
+  - record_key: LOC-BR-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Locale string interpretation'. Passes agree on the cited code and DDL.
+
+  - record_key: LOC-BR-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Screen definition selection by locale'. Passes agree on the cited code and DDL.
+
+  - record_key: LOC-REQ-0005
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Locale-aware number and currency formatting'. Passes agree on the cited code and DDL.
+
+  - record_key: LOC-WF-0010
+    recommendation: edit
+    confidence: low
+    reason: >
+      Compared the passes and cited sources for 'Change-locale recorded in controller state'. Source is disputed, low-confidence or possibly belongs to another capability; confirm the code behaviour (for example German is listed on the chooser but no German definitions are deployed) and capability fit.
+    edited_requirement: See requirement text in spec.md, narrowed to the behaviour the code actually performs.
+  - record_key: CAT-SCR-0012
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Common page layout'. Passes agree on the cited code and DDL.
+
+  - record_key: LOC-REQ-0014
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Client-state change-locale restore'. Passes agree on the cited code and DDL.
+
+  - record_key: LOC-REQ-0015
+    recommendation: edit
+    confidence: low
+    reason: >
+      Compared the passes and cited sources for 'Locale chooser options'. Source is disputed, low-confidence or possibly belongs to another capability; confirm the code behaviour (for example German is listed on the chooser but no German definitions are deployed) and capability fit.
+    edited_requirement: See requirement text in spec.md, narrowed to the behaviour the code actually performs.
+  - record_key: LOCALIZATION-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Supported storefront locales'. Passes agree on the cited code and DDL.
+
+  - record_key: LOCALIZATION-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Request text read as UTF-8'. Passes agree on the cited code and DDL.
+
+  - record_key: LOC-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Request encoding applied first'. Passes agree on the cited code and DDL.
+
+  - record_key: LOC-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Encoding applied to all URLs before sign-on'. Passes agree on the cited code and DDL.
+
+  - record_key: LOC-BR-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Storefront uses UTF-8'. Passes agree on the cited code and DDL.
+
+  - record_key: LOC-BR-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Unconfigured encoding falls through as null'. Passes agree on the cited code and DDL.
+
+  - record_key: CART-REQ-0008
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Cart locale'. Passes agree on the cited code and DDL.
+
+  - record_key: CATB-REQ-0007
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Catalog text by locale'. Passes agree on the cited code and DDL.
+
+  - record_key: LOCAL-BR-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Order email locale'. Passes agree on the cited code and DDL.
+
+  - record_key: BATCH-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Catalog integrity check of item descriptions'. Passes agree on the cited code and DDL.
+
+  - record_key: CAT-ENT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Category detail per locale'. Passes agree on the cited code and DDL.
+
+  - record_key: LOCALIZATION-ENT-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Product detail per locale'. Passes agree on the cited code and DDL.
+
+  - record_key: LOCALIZATION-ENT-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Item detail per locale'. Passes agree on the cited code and DDL.
+
+  - record_key: LOCALIZATION-ENT-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Customer profile language'. Passes agree on the cited code and DDL.
+
+  - record_key: CATALOG-RULE-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Catalog detail required fields'. Passes agree on the cited code and DDL.
+
+  - record_key: CUSTACCT-RULE-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Profile preference fields required'. Passes agree on the cited code and DDL.
+
+  - record_key: CAT-ENT-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Product detail uniqueness per locale'. Passes agree on the cited code and DDL.
+
+  - record_key: CAT-ENT-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Item detail uniqueness per locale'. Passes agree on the cited code and DDL.
+
+  - record_key: WORKFLOW-ENT-0001
+    recommendation: edit
+    confidence: low
+    reason: >
+      Compared the passes and cited sources for 'Order and purchase order counters'. Source is disputed, low-confidence or possibly belongs to another capability; confirm the code behaviour (for example German is listed on the chooser but no German definitions are deployed) and capability fit.
+    edited_requirement: See requirement text in spec.md, narrowed to the behaviour the code actually performs.
+  - record_key: ORD-REQ-0002
+    recommendation: edit
+    confidence: low
+    reason: >
+      Compared the passes and cited sources for 'Unhandled exception routing'. Source is disputed, low-confidence or possibly belongs to another capability; confirm the code behaviour (for example German is listed on the chooser but no German definitions are deployed) and capability fit.
+    edited_requirement: See requirement text in spec.md, narrowed to the behaviour the code actually performs.
+  - record_key: CATBRW-REQ-0001
+    recommendation: edit
+    confidence: low
+    reason: >
+      Compared the passes and cited sources for 'Previous-screen navigation'. Source is disputed, low-confidence or possibly belongs to another capability; confirm the code behaviour (for example German is listed on the chooser but no German definitions are deployed) and capability fit.
+    edited_requirement: See requirement text in spec.md, narrowed to the behaviour the code actually performs.
+  - record_key: LOCA-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Locale list in deployment configuration'. Passes agree on the cited code and DDL.
+
+  - record_key: LOC-REQ-0004
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Format and word-break per locale'. Passes agree on the cited code and DDL.
+
+  - record_key: LOC-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Change-locale notifies business tier'. Passes agree on the cited code and DDL.
+
+  - record_key: LOCAL-REQ-0001
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Language switch by value'. Passes agree on the cited code and DDL.
+
+  - record_key: LOCAL-REQ-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Default language for new sessions'. Passes agree on the cited code and DDL.
+
+  - record_key: LOCAL-REQ-0003
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Page language selection with fallback'. Passes agree on the cited code and DDL.
+
+  - record_key: LOCAL-REQ-0004
+    recommendation: edit
+    confidence: low
+    reason: >
+      Compared the passes and cited sources for 'Language chooser entries'. Source is disputed, low-confidence or possibly belongs to another capability; confirm the code behaviour (for example German is listed on the chooser but no German definitions are deployed) and capability fit.
+    edited_requirement: See requirement text in spec.md, narrowed to the behaviour the code actually performs.
+  - record_key: LOCALIZATION-REQ-0008
+    recommendation: edit
+    confidence: low
+    reason: >
+      Compared the passes and cited sources for 'Catalog locale selection by code'. Source is disputed, low-confidence or possibly belongs to another capability; confirm the code behaviour (for example German is listed on the chooser but no German definitions are deployed) and capability fit.
+    edited_requirement: See requirement text in spec.md, narrowed to the behaviour the code actually performs.
+  - record_key: CATA-REQ-0007
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Catalog queries resolved against a locale'. Passes agree on the cited code and DDL.
+
+  - record_key: LOCALIZATION-BR-0002
+    recommendation: accept
+    confidence: medium
+    reason: >
+      Compared the passes and cited sources for 'Encoding filter requirement (pass c)'. Passes agree on the cited code and DDL.
+
