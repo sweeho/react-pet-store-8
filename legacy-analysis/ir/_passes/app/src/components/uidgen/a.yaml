@@ -1,0 +1,140 @@
+records:
+  - record_key: ORDP-REQ-0001
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL return, for a given identifier prefix, a unique identifier formed by
+      concatenating the prefix with the next value of a per-prefix counter incremented by one.
+    confidence: high
+    confidence_basis: >
+      Counter logic in the entity bean, the session bean delegation, and the transaction
+      declaration in the deployment descriptor agree; a caller in the order action uses it.
+    risk_class: operational
+    basis: getUniqueId delegates to the counter named by the prefix; getNextValue increments and returns name+count.
+    plain_text: >
+      Each new order or similar item gets a unique number made of a prefix followed by a running count for that prefix.
+    technical_note: >
+      UniqueIdGeneratorEJB.getUniqueId -> CounterEJB.getNextValue (CMP entity, int counter). No separator between prefix and number.
+      Called by the order action with prefix "1001" (IDs like 10011, 10012).
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/uidgen/src/com/sun/j2ee/blueprints/uidgen/ejb/UniqueIdGeneratorEJB.java
+        line_start: 67
+        line_end: 69
+        excerpt: |
+          public String getUniqueId(String idPrefix) {
+              return getCounter(idPrefix).getNextValue();
+          }
+      - path: legacy-source/app/src/components/uidgen/src/com/sun/j2ee/blueprints/uidgen/counter/ejb/CounterEJB.java
+        line_start: 159
+        line_end: 163
+        excerpt: |
+          public String getNextValue() {
+              int count = getCounter() + 1;
+              setCounter(count);
+              return getName() + String.valueOf(count);
+          }
+      - path: legacy-source/app/src/apps/petstore/src/com/sun/j2ee/blueprints/petstore/controller/ejb/actions/OrderEJBAction.java
+        line_start: 110
+        line_end: 110
+        excerpt: |
+          orderIdString = uidgen.getUniqueId("1001");
+    stack_metadata:
+      framework: EJB 2.x
+      ejb.bean: UniqueIdGeneratorEJB, CounterEJB
+      ejb.transaction: Required
+      db.object: Counter (CMP abstract schema)
+  - record_key: ORDP-BR-0001
+    kind: business-rule
+    capability_key: order-processing-workflow
+    requirement: >
+      GIVEN no counter exists for a prefix WHEN an identifier is requested THEN the system SHALL create a counter for that prefix starting at 0, so the first identifier issued ends in 1.
+    confidence: high
+    confidence_basis: >
+      Create-on-miss in the session bean and the initial value 0 in the entity create method, two places.
+    risk_class: operational
+    basis: FinderException triggers create(name); ejbCreate sets counter 0.
+    plain_text: >
+      The first time a prefix is used, numbering starts at one.
+    technical_note: >
+      getCounter catches FinderException and calls clh.create(name). A CreateException becomes an EJBException. Counter primary key is the name.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/uidgen/src/com/sun/j2ee/blueprints/uidgen/ejb/UniqueIdGeneratorEJB.java
+        line_start: 74
+        line_end: 86
+        excerpt: |
+          private CounterLocal getCounter(String name) {
+              try {
+                  CounterLocal counter = null;
+                  try {
+                      counter = clh.findByPrimaryKey(name);
+                  } catch (FinderException fe) {
+                      counter = clh.create(name);
+                  }
+                  return counter;
+              } catch (CreateException ce) {
+                  throw new EJBException("Could not create counter " + name + ". Error: " + ce.getMessage());
+              }
+          }
+      - path: legacy-source/app/src/components/uidgen/src/com/sun/j2ee/blueprints/uidgen/counter/ejb/CounterEJB.java
+        line_start: 150
+        line_end: 154
+        excerpt: |
+          public String ejbCreate(String name) throws CreateException {
+              setName(name);
+              setCounter(0);
+              return null;
+          }
+    stack_metadata:
+      framework: EJB 2.x
+      ejb.bean: CounterEJB
+      ejb.transaction: Required
+  - record_key: ORDP-REQ-0002
+    kind: requirement
+    capability_key: order-processing-workflow
+    requirement: >
+      The system SHALL issue each identifier within a transaction so the counter increment is committed atomically with the issuing request.
+    confidence: medium
+    confidence_basis: >
+      Declared transaction attribute Required in the deployment descriptor; concurrency behaviour depends on container isolation, not visible here.
+    risk_class: operational
+    basis: container-transaction Required on getUniqueId, getNextValue and create.
+    plain_text: >
+      Numbers are issued as part of the surrounding transaction, so a failed request does not consume a number.
+    technical_note: >
+      ejb-jar.xml trans-attribute Required for UniqueIdGeneratorEJB.getUniqueId and CounterEJB create/getNextValue/remove; Counter is non-reentrant.
+    interface: false
+    traces:
+      - path: legacy-source/app/src/components/uidgen/src/ejb-jar.xml
+        line_start: 232
+        line_end: 242
+        excerpt: |
+          <container-transaction>
+            <method>
+              <ejb-name>UniqueIdGeneratorEJB</ejb-name>
+              <method-intf>Local</method-intf>
+              <method-name>getUniqueId</method-name>
+              <method-params>
+                <method-param>java.lang.String</method-param>
+              </method-params>
+            </method>
+            <trans-attribute>Required</trans-attribute>
+    stack_metadata:
+      framework: EJB 2.x
+      ejb.transaction: Required
+      ejb.bean: UniqueIdGeneratorEJB
+suspected_defects:
+  - capability_key: order-processing-workflow
+    record_keys: [ORDP-REQ-0001]
+    severity: low
+    category: other
+    title: Counter is a 32-bit int with no overflow handling and no separator
+    description: >
+      The counter is an int incremented without bounds check, and the prefix is concatenated directly to the number,
+      so prefix "1001" with count 11 gives "100111", which is ambiguous with prefix "10011" count 1.
+    traces:
+      - path: legacy-source/app/src/components/uidgen/src/com/sun/j2ee/blueprints/uidgen/counter/ejb/CounterEJB.java
+        line_start: 159
+        line_end: 163
+findings: []
