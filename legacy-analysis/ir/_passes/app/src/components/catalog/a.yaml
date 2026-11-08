@@ -1,0 +1,184 @@
+records:
+  - record_key: CATA-REQ-0001
+    kind: requirement
+    capability_key: catalog-browsing
+    requirement: The system SHALL return categories, products within a category, and items within a product as pages, each page starting at a caller-supplied zero-based offset and holding at most the requested count, in the requested locale.
+    plain_text: Shoppers browse categories, products and items a page at a time, in their language.
+    technical_note: GenericCatalogDAO.getCategories/getProducts/getItems position the cursor with absolute(start+1) and read until count is exhausted.
+    interface: false
+    confidence: high
+    confidence_basis: Same paging loop repeated in three DAO methods and surfaced through CatalogHelper; no test seen.
+    risk_class: presentational
+    basis: Paging loop and Page model.
+    traces:
+      - path: legacy-source/app/src/components/catalog/src/com/sun/j2ee/blueprints/catalog/dao/GenericCatalogDAO.java
+        line_start: 194
+        line_end: 204
+        excerpt: |
+          if (start >= 0 && resultSet.absolute(start + 1)) {
+            ...
+            } while ((hasNext = resultSet.next()) && (--count > 0));
+            return new Page(categories, start, hasNext);
+          }
+          return Page.EMPTY_PAGE;
+    stack_metadata:
+      framework: EJB 2.x
+      ejb.bean: CatalogEJB
+      ejb.transaction: Required
+  - record_key: CATA-BR-0002
+    kind: business-rule
+    capability_key: catalog-browsing
+    requirement: GIVEN a start offset that is negative or beyond the last row WHEN a page is requested THEN the system SHALL return an empty page with no next and no previous page.
+    plain_text: Asking for a page past the end of the list, or before the start, shows an empty result.
+    technical_note: Falls through to Page.EMPTY_PAGE (start 0, hasNext false).
+    interface: false
+    confidence: high
+    confidence_basis: Same fall-through in all four paged methods plus the EMPTY_PAGE constant.
+    risk_class: presentational
+    basis: absolute() false or start<0 returns EMPTY_PAGE.
+    traces:
+      - path: legacy-source/app/src/components/catalog/src/com/sun/j2ee/blueprints/catalog/model/Page.java
+        line_start: 52
+        line_end: 53
+        excerpt: |
+          public static final Page EMPTY_PAGE =
+              new Page(Collections.EMPTY_LIST, 0, false);
+  - record_key: CATA-BR-0003
+    kind: business-rule
+    capability_key: catalog-browsing
+    requirement: The system SHALL report a next page as available only when at least one further row exists after the returned page, and a previous page as available when the start offset is greater than zero; the previous page start SHALL be the current start minus the current page size, not below zero.
+    plain_text: Next and Previous links appear only when there is more to see in that direction.
+    technical_note: Page.isNextPageAvailable returns hasNext set by the DAO; getStartOfPreviousPage uses max(start - size, 0).
+    interface: false
+    confidence: high
+    confidence_basis: Page model plus DAO hasNext computation; commented-out older total-size approach noted.
+    risk_class: presentational
+    basis: Page accessors.
+    traces:
+      - path: legacy-source/app/src/components/catalog/src/com/sun/j2ee/blueprints/catalog/model/Page.java
+        line_start: 75
+        line_end: 91
+        excerpt: |
+          return hasNext;
+          return start > 0;
+          public int getStartOfNextPage() { return start + objects.size(); }
+          return Math.max(start-objects.size(), 0);
+  - record_key: CATA-REQ-0004
+    kind: requirement
+    capability_key: catalog-browsing
+    requirement: The system SHALL search items by whitespace-separated keywords, splitting the query into a de-duplicated set of keywords, matching each keyword as a substring against three item/product text fields in the requested locale, and returning a page of matching items.
+    plain_text: Shoppers can search by typing one or more words; items whose name or description contain the words are listed.
+    technical_note: searchItems builds a HashSet from StringTokenizer, binds "%kw%" three times per keyword to the SEARCH_ITEMS statement from the SQL XML. Whether keywords combine with AND or OR is defined in the SQL file, not verified here.
+    interface: false
+    confidence: medium
+    confidence_basis: Java side read clearly; the combining logic lives in SQL configuration I did not trace.
+    risk_class: presentational
+    basis: searchItems tokenising and parameter binding.
+    traces:
+      - path: legacy-source/app/src/components/catalog/src/com/sun/j2ee/blueprints/catalog/dao/GenericCatalogDAO.java
+        line_start: 343
+        line_end: 364
+        excerpt: |
+          StringTokenizer tokenizer = new StringTokenizer(searchQuery);
+          ...
+          parameterValues[(i * 3) + 1] = "%" + keywords[i] + "%";
+  - record_key: CATA-BR-0005
+    kind: business-rule
+    capability_key: catalog-browsing
+    requirement: GIVEN a search query containing no keywords (empty or only whitespace) WHEN a search is requested THEN the system SHALL return an empty page.
+    plain_text: A blank search returns nothing.
+    technical_note: Early return of Page.EMPTY_PAGE when keywordSet is empty.
+    interface: false
+    confidence: medium
+    confidence_basis: One clear place.
+    risk_class: presentational
+    basis: Empty keyword check.
+    traces:
+      - path: legacy-source/app/src/components/catalog/src/com/sun/j2ee/blueprints/catalog/dao/GenericCatalogDAO.java
+        line_start: 350
+        line_end: 352
+        excerpt: |
+          if (keywordSet.isEmpty()) {
+            return Page.EMPTY_PAGE;
+          }
+  - record_key: CATA-REQ-0006
+    kind: requirement
+    capability_key: catalog-browsing
+    requirement: The system SHALL return a single category, product or item by identifier in the requested locale, and SHALL return nothing when no row exists.
+    plain_text: Looking up a category, product or item by its code shows it in the shopper's language; an unknown code gives no result.
+    technical_note: DAO getCategory/getProduct/getItem return null when resultSet.first() is false.
+    interface: false
+    confidence: high
+    confidence_basis: Same pattern in three DAO methods.
+    risk_class: presentational
+    basis: first() check.
+    traces:
+      - path: legacy-source/app/src/components/catalog/src/com/sun/j2ee/blueprints/catalog/dao/GenericCatalogDAO.java
+        line_start: 171
+        line_end: 174
+        excerpt: |
+          if (resultSet.first()) {
+            return new Category(categoryID, resultSet.getString(1), resultSet.getString(2));
+          }
+          return null;
+  - record_key: CATA-REQ-0007
+    kind: requirement
+    capability_key: localization
+    requirement: The system SHALL resolve every catalog query against a locale, and SHALL select localized names and descriptions by that locale's string form.
+    plain_text: Catalog text is shown in the language the shopper selected.
+    technical_note: Every DAO query binds locale.toString() as first parameter; CatalogHelper.setLocale converts a locale string.
+    interface: false
+    confidence: medium
+    confidence_basis: Consistent across methods; supported locales are data, not seen here.
+    risk_class: presentational
+    basis: Locale binding.
+    traces:
+      - path: legacy-source/app/src/components/catalog/src/com/sun/j2ee/blueprints/catalog/dao/GenericCatalogDAO.java
+        line_start: 357
+        line_end: 360
+        excerpt: |
+          String[] parameterValues = new String[1 + (keywords.length * 3)];
+          parameterValues[0] = locale.toString();
+  - record_key: CATA-REQ-0008
+    kind: integration
+    capability_key: catalog-browsing
+    requirement: The system SHALL expose catalog reads through a container-managed stateless component and SHALL let the web tier optionally bypass it and query the database directly.
+    plain_text: The catalog can be read either through the application server component or directly from the database, depending on configuration.
+    technical_note: CatalogHelper(useFastLane) chooses DAO vs CatalogEJB; all EJB methods Required transaction.
+    interface: false
+    confidence: medium
+    confidence_basis: Clear in helper; which mode is deployed is configuration not seen.
+    risk_class: operational
+    basis: Fast-lane switch.
+    traces:
+      - path: legacy-source/app/src/components/catalog/src/com/sun/j2ee/blueprints/catalog/client/CatalogHelper.java
+        line_start: 152
+        line_end: 160
+        excerpt: |
+          public Page getSearchItems()
+              throws CatalogException {
+              ... ? searchItemsFromDAO(...) : searchItemsFromEJB(...)
+suspected_defects:
+  - capability_key: catalog-browsing
+    record_keys: [CATA-REQ-0004]
+    severity: low
+    category: other
+    title: Search keywords are not escaped for wildcard characters
+    description: >
+      Keywords are wrapped in % without escaping, so a keyword containing % or _ acts as a wildcard.
+    traces:
+      - path: legacy-source/app/src/components/catalog/src/com/sun/j2ee/blueprints/catalog/dao/GenericCatalogDAO.java
+        line_start: 362
+        line_end: 364
+  - capability_key: catalog-browsing
+    record_keys: [CATA-REQ-0001]
+    severity: low
+    category: other
+    title: Non-numeric count or start throws unchecked NumberFormatException
+    description: >
+      CatalogHelper.setCount parses without validation; a bad value raises an exception rather than a handled error.
+    traces:
+      - path: legacy-source/app/src/components/catalog/src/com/sun/j2ee/blueprints/catalog/client/CatalogHelper.java
+        line_start: 105
+        line_end: 107
+findings: []
